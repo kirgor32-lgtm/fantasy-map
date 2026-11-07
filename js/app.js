@@ -19,7 +19,7 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;',
 
 // ---------- worker ----------
 let worker = null;
-try { worker = new Worker('js/gen.js?v=1'); } catch (e) { worker = null; }
+try { worker = new Worker('js/gen.js?v=2'); } catch (e) { worker = null; }
 function generate(params) {
   return new Promise((resolve, reject) => {
     const local = () => setTimeout(() => { try { resolve(FMG.generate(params)); } catch (e) { reject(e); } }, 30);
@@ -140,7 +140,7 @@ function persist() {
 }
 function updateStats() {
   const m = S.map; if (!m) return;
-  $('#stats').textContent = `${fmt(m.n)} клеток · генерация ${Math.round(S.tGen)} мс · подготовка ${Math.round(m._p.time)} мс · кадр ${Math.round(S.tFrame || 0)} мс`;
+  $('#stats').textContent = `${fmt(m.n)} клеток · генерация ${Math.round(S.tGen)} мс · подготовка ${Math.round(m._p.time)} мс`;
 }
 function refreshLabels() { buildCache(); crisp = null; renderCrisp(); renderStatesList(); persist(); }
 

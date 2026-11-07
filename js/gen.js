@@ -708,7 +708,7 @@ function generate(P) {
       if (blocked[c] || h[c] < 0.3) continue;
       if (flux[c] > riverThr * 2) continue;
       const jx = cx[c] + (rand() - 0.5) * spacing * 0.5, jy = cy[c] + (rand() - 0.5) * spacing * 0.5;
-      if (h[c] >= 0.5) { const s = spacing * (0.75 + (h[c] - 0.5) * 2.2); if (free(jx, jy, s * 1.6)) put({ t: h[c] > 0.75 && temp[c] < 6 ? 'M' : 'm', x: jx, y: jy, s, r: s * 1.6 }); }
+      if (h[c] >= 0.5) { const s = spacing * (0.8 + (h[c] - 0.5) * 2.0) * (0.85 + rand() * 0.3); if (free(jx, jy, s * 2.1)) put({ t: h[c] > 0.75 && temp[c] < 6 ? 'M' : 'm', x: jx, y: jy, s, r: s * 2.1 }); }
       else if (rand() < 0.55) { const s = spacing * 0.6; if (free(jx, jy, s * 2.2)) put({ t: 'h', x: jx, y: jy, s, r: s * 2.2 }); }
     }
     const treeT = { 5: 't', 6: 't', 8: 't', 9: 'c', 7: 'p', 12: 's', 1: 'd' };

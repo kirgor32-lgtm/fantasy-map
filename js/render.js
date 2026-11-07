@@ -30,7 +30,7 @@ function smoothOpen(p, pts) {
   p.lineTo(pts[2 * n - 2], pts[2 * n - 1]);
 }
 
-let paperPattern = null;
+let paperPattern = null; const PATS = new WeakMap();
 function paper(ctx) {
   if (!paperPattern) {
     const c = mkCanvas(256, 256), g = c.getContext('2d'); const img = g.createImageData(256, 256);
@@ -203,8 +203,16 @@ function render(ctx, m, V, O) {
   ctx.drawImage(P.ocean, 0, 0, W, H);
   if (L.waves) {
     ctx.save(); ctx.clip(P.oceanClip, 'evenodd');
-    ctx.strokeStyle = 'rgba(236,246,246,0.16)';
-    for (const f of [3.2, 2.0, 1.1, 0.5]) { ctx.lineWidth = spacing * f; ctx.stroke(P.coast); }
+    // two thin "contour" rings like on old sea charts
+    let pat = PATS.get(ctx);
+    if (!pat || pat.P !== P) { pat = { P, p: ctx.createPattern(P.ocean, 'no-repeat') }; pat.p.setTransform(new DOMMatrix([1 / P.R, 0, 0, 1 / P.R, 0, 0])); PATS.set(ctx, pat); }
+    P.oceanPat = pat.p;
+    const r1 = Math.max(3.5 * u, spacing * 0.45), r2 = r1 * 2.3;
+    for (const r of [r2, r1]) {
+      ctx.strokeStyle = 'rgba(60,90,105,0.38)'; ctx.lineWidth = 2 * r + 1.1 * u; ctx.stroke(P.coast);
+      ctx.strokeStyle = P.oceanPat; ctx.lineWidth = 2 * r; ctx.stroke(P.coast);
+      ctx.strokeStyle = 'rgba(215,232,236,0.22)'; ctx.stroke(P.coast);
+    }
     ctx.restore();
   }
   ctx.save(); ctx.clip(P.coast);
@@ -241,17 +249,18 @@ function render(ctx, m, V, O) {
   }
   // borders
   if (L.borders) {
-    ctx.setLineDash([5 * u, 2.5 * u]);
-    ctx.strokeStyle = 'rgba(255,248,235,0.55)'; ctx.lineWidth = 3 * u; ctx.stroke(P.borders);
-    ctx.strokeStyle = 'rgba(110,35,40,0.85)'; ctx.lineWidth = 1.5 * u; ctx.stroke(P.borders);
+    ctx.strokeStyle = 'rgba(120,40,90,0.22)'; ctx.lineWidth = 5 * u; ctx.stroke(P.borders);
+    ctx.setLineDash([8 * u, 3 * u, 1.5 * u, 3 * u]);
+    ctx.strokeStyle = 'rgba(105,30,75,0.9)'; ctx.lineWidth = 1.6 * u; ctx.stroke(P.borders);
     ctx.setLineDash([]);
   }
   // roads
   if (L.roads) {
-    ctx.strokeStyle = '#6e4628';
-    ctx.lineWidth = 1.7 * u; ctx.setLineDash([7 * u, 2.5 * u]); ctx.stroke(P.roads[1]);
-    ctx.lineWidth = 1.2 * u; ctx.setLineDash([4 * u, 2.5 * u]); ctx.stroke(P.roads[2]);
-    ctx.globalAlpha = 0.8; ctx.lineWidth = 0.9 * u; ctx.setLineDash([1.5 * u, 2.5 * u]); ctx.stroke(P.roads[3]); ctx.globalAlpha = 1;
+    ctx.strokeStyle = 'rgba(250,240,215,0.7)'; ctx.lineWidth = 3.2 * u; ctx.stroke(P.roads[1]);
+    ctx.strokeStyle = '#7b4a22';
+    ctx.lineWidth = 1.6 * u; ctx.stroke(P.roads[1]);
+    ctx.lineWidth = 1.15 * u; ctx.setLineDash([4 * u, 2 * u]); ctx.stroke(P.roads[2]);
+    if (V.scale >= V.fit * 1.2) { ctx.globalAlpha = 0.85; ctx.lineWidth = 0.9 * u; ctx.setLineDash([1.2 * u, 2.4 * u]); ctx.stroke(P.roads[3]); ctx.globalAlpha = 1; }
     ctx.setLineDash([]);
   }
   // frame
@@ -280,15 +289,6 @@ function render(ctx, m, V, O) {
       ctx.globalAlpha = 1;
     }
     if (hasLS) ctx.letterSpacing = '0px';
-    if (L.rivers && V.scale >= V.fit * 1.35) {
-      ctx.font = `italic 600 ${(11.5 * zf).toFixed(1)}px "Cormorant Garamond", Georgia, serif`;
-      for (const r of m.rivers) {
-        if (!r.name) continue; const p = r.pts; const i = Math.floor(p.length / 4) * 2;
-        const x = sx(p[i]), y = sy(p[i + 1]); if (!onScreen(x, y, 50)) continue;
-        let a = Math.atan2(p[i + 3] - p[i - 1], p[i + 2] - p[i - 2]); if (a > Math.PI / 2) a -= Math.PI; if (a < -Math.PI / 2) a += Math.PI;
-        ctx.save(); ctx.translate(x, y); ctx.rotate(a); halo('р. ' + r.name, 0, -7, '#2f5f80', 2.5); ctx.restore();
-      }
-    }
   }
   if (L.burgs) {
     const list = O.sortedBurgs || m.burgs;
@@ -323,6 +323,18 @@ function render(ctx, m, V, O) {
           boxes.push(box); ctx.textAlign = al; halo(b.name, lx, ly, b.capital ? '#2a1a10' : '#3a2a1c', 3); break;
         }
       }
+    }
+  }
+  if (L.labels && L.rivers && V.scale >= V.fit * 1.35) {
+    const fs = 11.5 * zf; ctx.font = `italic 600 ${fs.toFixed(1)}px "Cormorant Garamond", Georgia, serif`; ctx.textAlign = 'center';
+    for (const r of m.rivers) {
+      if (!r.name) continue; const p = r.pts; const i = Math.max(2, Math.floor(p.length / 4) * 2);
+      const x = sx(p[i]), y = sy(p[i + 1]); if (!onScreen(x, y, 50)) continue;
+      let a = Math.atan2(p[i + 3] - p[i - 1], p[i + 2] - p[i - 2]); if (a > Math.PI / 2) a -= Math.PI; if (a < -Math.PI / 2) a += Math.PI;
+      const txt = 'р. ' + r.name, tw = ctx.measureText(txt).width;
+      const ox = Math.sin(a) * 7, oy = -Math.cos(a) * 7; const bw = Math.abs(Math.cos(a)) * tw + fs, bh = Math.abs(Math.sin(a)) * tw + fs;
+      const box = { x: x + ox - bw / 2, y: y + oy - bh / 2, w: bw, h: bh }; if (hit(box)) continue; boxes.push(box);
+      ctx.save(); ctx.translate(x, y); ctx.rotate(a); halo(txt, 0, -7, '#2f5f80', 2.5); ctx.restore();
     }
   }
   ctx.restore();
