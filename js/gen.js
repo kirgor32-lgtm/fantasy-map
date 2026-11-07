@@ -743,7 +743,7 @@ function generate(P) {
     const cand = [];
     for (let c = 0; c < n; c++) {
       if (type[c] !== 1 || d[c] < 3) continue;
-      const e = Math.min(cx[c], W - cx[c], cy[c], H - cy[c]); if (e < H * 0.07) continue;
+      const e = Math.min(cx[c] - W * 0.08, W * 0.92 - cx[c], cy[c] - H * 0.1, H * 0.84 - cy[c]); if (e < 0) continue;
       cand.push(c);
     }
     cand.sort((a, b) => d[b] - d[a]);
