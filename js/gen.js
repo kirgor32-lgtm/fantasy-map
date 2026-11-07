@@ -734,6 +734,26 @@ function generate(P) {
     for (let c = 0; c < n; c++) if (type[c] === 0 && state[c] >= 0 && d[c] > bd[state[c]]) { bd[state[c]] = d[c]; best[state[c]] = c; }
     states.forEach((s, i) => { const c = best[i] >= 0 ? best[i] : s.cell; s.lx = cx[c]; s.ly = cy[c]; s.depth = Math.max(1, bd[i]); });
   }
+  // sea labels: open-water points far from land, spread apart
+  const seas = [];
+  {
+    const d = new Int32Array(n).fill(-1); const q = [];
+    for (let c = 0; c < n; c++) if (type[c] !== 1) { d[c] = 0; q.push(c); }
+    for (let qi = 0; qi < q.length; qi++) { const c = q[qi]; for (let k = nOff[c]; k < nOff[c + 1]; k++) { const o = nbr[k]; if (o >= 0 && d[o] < 0) { d[o] = d[c] + 1; q.push(o); } } }
+    const cand = [];
+    for (let c = 0; c < n; c++) {
+      if (type[c] !== 1 || d[c] < 3) continue;
+      const e = Math.min(cx[c], W - cx[c], cy[c], H - cy[c]); if (e < H * 0.07) continue;
+      cand.push(c);
+    }
+    cand.sort((a, b) => d[b] - d[a]);
+    for (const c of cand) {
+      if (seas.length >= 3) break;
+      if (seas.some(s => Math.hypot(s.x - cx[c], s.y - cy[c]) < W * 0.28)) continue;
+      let cu = 0, best = Infinity; for (const b of burgs) { const dd = (b.x - cx[c]) ** 2 + (b.y - cy[c]) ** 2; if (dd < best) { best = dd; cu = Math.max(0, b.culture); } }
+      seas.push({ x: cx[c], y: cy[c], name: (seas.length === 0 ? 'Море ' : rand() < 0.5 ? 'Море ' : 'Воды ') + namer(cultures[cu] ? cultures[cu].lang : 'imp', 10) });
+    }
+  }
   const pickLang = LANG_KEYS[(rand() * LANG_KEYS.length) | 0];
   const name = namer(cultures.length ? cultures[(rand() * cultures.length) | 0].lang : pickLang, 10);
   T.geometry = now() - t; T.total = now() - t00;
@@ -741,7 +761,7 @@ function generate(P) {
   return {
     ...M, seed, params: { seed, cells: N, land: landFrac, rough, states: nStates, towns: nTowns, rivers: riverFrac, km: mapKm, climate, shape },
     kmPerUnit, cellAreaKm, h, type, biome, temp, moist, flux, shade, riverThr, state, culture,
-    burgs, states, cultures, rivers, roads, coast, lakes, borders, icons, name, timings: T,
+    burgs, states, cultures, rivers, roads, coast, lakes, borders, icons, seas, name, timings: T,
     landCells: landCells.length
   };
 }

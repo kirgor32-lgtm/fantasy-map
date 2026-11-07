@@ -278,6 +278,13 @@ function render(ctx, m, V, O) {
   const hasLS = 'letterSpacing' in ctx;
   if (L.labels) {
     ctx.textAlign = 'center';
+    const ss = clamp(15 * zf, 13, 22);
+    ctx.font = `italic 600 ${ss.toFixed(1)}px "Cormorant Garamond", Georgia, serif`;
+    if (hasLS) ctx.letterSpacing = (ss * 0.35).toFixed(1) + 'px';
+    for (const s of m.seas || []) {
+      const x = sx(s.x), y = sy(s.y); if (!onScreen(x, y, 200)) continue;
+      ctx.fillStyle = 'rgba(35,70,95,0.62)'; ctx.fillText(s.name, x, y);
+    }
     for (const s of m.states) {
       const x = sx(s.lx), y = sy(s.ly); if (!onScreen(x, y, 300)) continue;
       const size = clamp(Math.sqrt(s.cells) * spacing * V.scale * 0.1, 11, 46);
