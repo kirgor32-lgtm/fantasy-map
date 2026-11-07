@@ -377,6 +377,7 @@ panel.style.position = 'fixed'; panel.querySelector('.ph').style.position = 'rel
 const setPanel = open => { panel.classList.toggle('hidden', !open); fab.classList.toggle('show', !open); };
 hideBtn.onclick = () => setPanel(false); fab.onclick = () => setPanel(true);
 if (innerWidth <= 760) setPanel(false);
+let wasMobile = innerWidth <= 760; addEventListener('resize', () => { const mob = innerWidth <= 760; if (mob && !wasMobile) setPanel(false); wasMobile = mob; });
 addEventListener('resize', () => { clearTimeout(resize.t); resize.t = setTimeout(resize, 120); });
 
 // ---------- start ----------
