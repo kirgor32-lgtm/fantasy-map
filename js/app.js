@@ -23,7 +23,7 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;',
 
 // ---------- worker ----------
 let worker = null;
-try { worker = new Worker('js/gen.js?v=7'); } catch (e) { worker = null; }
+try { worker = new Worker('js/gen.js?v=8'); } catch (e) { worker = null; }
 function generate(params) {
   return new Promise((resolve, reject) => {
     const local = () => setTimeout(() => { try { resolve(FMG.generate(params)); } catch (e) { reject(e); } }, 30);
@@ -51,7 +51,8 @@ function fitView() {
   view.scale = fit; view.x = -(panelW + (vw - panelW - m.W * fit) / 2) / fit; view.y = -((vh - m.H * fit) / 2) / fit;
 }
 const V = () => ({ scale: view.scale, x: view.x, y: view.y, dpr, w: vw, h: vh, fit });
-const opts = () => ({ layers: S.layers, hexKm: S.hexKm, sortedBurgs, selState: S.selState, selBurg: S.selBurg, ruler: S.ruler, title: S.map ? S.map.name : '' });
+const panelRight = () => { const p = document.getElementById('panel'); if (!p || p.classList.contains('hidden') || innerWidth <= 760) return 20; return p.getBoundingClientRect().right + 22; };
+const opts = () => ({ scaleX: panelRight(), layers: S.layers, hexKm: S.hexKm, sortedBurgs, selState: S.selState, selBurg: S.selBurg, ruler: S.ruler, title: S.map ? S.map.name : '' });
 
 // full-map bitmap used while panning/zooming
 function buildCache() {

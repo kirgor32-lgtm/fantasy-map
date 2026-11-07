@@ -73,7 +73,7 @@ class Heap {
 // id, name, color, habitability, movement cost
 const BIOMES = [
   { name: 'Море', color: '#9fc0cf', hab: 0, cost: 30 },
-  { name: 'Пустыня', color: '#e8d6a0', hab: 4, cost: 3 },
+  { name: 'Пустыня', color: '#ecd08a', hab: 4, cost: 3 },
   { name: 'Холодная пустошь', color: '#c7c39c', hab: 8, cost: 3 },
   { name: 'Саванна', color: '#d6cf8c', hab: 50, cost: 1.3 },
   { name: 'Луга и степи', color: '#c4d096', hab: 100, cost: 1 },
@@ -83,7 +83,7 @@ const BIOMES = [
   { name: 'Влажный лес', color: '#6f9a69', hab: 60, cost: 2 },
   { name: 'Тайга', color: '#7a9576', hab: 25, cost: 2 },
   { name: 'Тундра', color: '#b8b59e', hab: 8, cost: 2.5 },
-  { name: 'Ледник', color: '#f1f4f4', hab: 0, cost: 6 },
+  { name: 'Ледник', color: '#f4f8fb', hab: 0, cost: 6 },
   { name: 'Болото', color: '#8fa889', hab: 15, cost: 4 },
   { name: 'Высокогорье', color: '#c2b49e', hab: 3, cost: 6 }
 ];

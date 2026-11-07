@@ -167,6 +167,10 @@ function prepare(m) {
     }
   }
   P.icons = I;
+  // glaciers and deserts stay readable above the political tint
+  P.ice = new Path2D(); P.sand = new Path2D();
+  for (const l of FMG.loops(m, c => type[c] === 0 && biome[c] === 11)) smoothClosed(P.ice, l);
+  for (const l of FMG.loops(m, c => type[c] === 0 && biome[c] === 1)) smoothClosed(P.sand, l);
   // race habitat areas
   P.folk = [];
   if (m.peoples) for (const pp of m.peoples) {
@@ -232,6 +236,17 @@ function render(ctx, m, V, O) {
   ctx.save(); ctx.clip(P.coast);
   ctx.drawImage(L.biomes ? P.land : P.plain, 0, 0, W, H);
   if (L.states) { ctx.globalAlpha = L.biomes ? 0.32 : 0.45; ctx.drawImage(P.states, 0, 0, W, H); ctx.globalAlpha = 1; }
+  if (L.biomes && P.ice) {
+    const u0 = 1 / V.scale;
+    ctx.fillStyle = 'rgba(250,253,255,0.72)'; ctx.fill(P.ice);
+    ctx.strokeStyle = 'rgba(120,160,190,0.75)'; ctx.lineWidth = 1.1 * u0; ctx.stroke(P.ice);
+    ctx.fillStyle = 'rgba(236,202,120,0.5)'; ctx.fill(P.sand);
+    ctx.save(); ctx.clip(P.sand);
+    if (!P.sandPat) { const pc = mkCanvas(14, 14), g = pc.getContext('2d'); g.fillStyle = 'rgba(150,105,40,0.55)'; for (const [a, b] of [[2, 3], [9, 1], [6, 8], [12, 11], [3, 12]]) { g.beginPath(); g.arc(a, b, 0.9, 0, 7); g.fill(); } P.sandPat = ctx.createPattern(pc, 'repeat'); }
+    ctx.fillStyle = P.sandPat; ctx.fill(P.sand); ctx.restore();
+    if (!P.icePat) { const pc = mkCanvas(16, 16), g = pc.getContext('2d'); g.strokeStyle = 'rgba(110,150,185,0.45)'; g.lineWidth = 1; g.beginPath(); g.moveTo(0, 16); g.lineTo(16, 0); g.stroke(); P.icePat = ctx.createPattern(pc, 'repeat'); }
+    ctx.save(); ctx.clip(P.ice); ctx.fillStyle = P.icePat; ctx.fill(P.ice); ctx.restore();
+  }
   ctx.restore();
   // lakes
   ctx.fillStyle = '#a6c8d5'; ctx.fill(P.lakes);
@@ -301,7 +316,7 @@ function render(ctx, m, V, O) {
   const hasLS = 'letterSpacing' in ctx; const LS = v => { if (hasLS) ctx.letterSpacing = v.toFixed(1) + 'px'; };
   const z = V.scale / V.fit;
   const tier = b => b.capital ? 0 : b.pop >= 10 ? 1 : b.pop >= 3 ? 2 : 3; // столица, город, городок, деревня
-  const R_ = [6.5, 4.2, 3, 1.9];
+  const R_ = [7, 5, 3.2, 1.8];
   const FS = [15, 13.5, 12, 10.5];
   const FONT = ['700 {s}px "Cormorant SC", Georgia, serif', '700 {s}px "Cormorant Garamond", Georgia, serif', '600 {s}px "Cormorant Garamond", Georgia, serif', 'italic 500 {s}px "Cormorant Garamond", Georgia, serif'];
   const COL = ['#7a1414', '#22160c', '#33241a', '#4a3a2c'];
@@ -323,9 +338,10 @@ function render(ctx, m, V, O) {
       if (t === 0) {
         ctx.beginPath(); ctx.arc(x, y, r + 2.2, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,248,230,0.95)'; ctx.fill(); ctx.strokeStyle = '#2e2218'; ctx.lineWidth = 1.2; ctx.stroke();
         star(x, y, r); ctx.fillStyle = '#a31b1b'; ctx.fill(); ctx.strokeStyle = '#4a0e0e'; ctx.lineWidth = 0.8; ctx.stroke();
-      } else if (t === 1) {
-        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fillStyle = '#fff8e8'; ctx.fill(); ctx.strokeStyle = '#2a1d12'; ctx.lineWidth = 1.6; ctx.stroke();
-        ctx.beginPath(); ctx.arc(x, y, 1.7, 0, Math.PI * 2); ctx.fillStyle = '#2a1d12'; ctx.fill();
+      } else if (t === 1) { // city: square fortress with dark core
+        ctx.fillStyle = '#fff8e8'; ctx.strokeStyle = '#2a1d12'; ctx.lineWidth = 1.6;
+        ctx.fillRect(x - r, y - r, 2 * r, 2 * r); ctx.strokeRect(x - r, y - r, 2 * r, 2 * r);
+        ctx.fillStyle = '#2a1d12'; ctx.fillRect(x - r * 0.45, y - r * 0.45, r * 0.9, r * 0.9);
       } else if (t === 2) {
         ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fillStyle = '#fff8e8'; ctx.fill(); ctx.strokeStyle = '#2a1d12'; ctx.lineWidth = 1.2; ctx.stroke();
       } else {
@@ -492,8 +508,8 @@ function decor(ctx, m, V, O) {
       const y = ly + 32 + i * lh, x = lx + 20;
       ctx.lineWidth = 1.2; ctx.setLineDash([]);
       if (k === 'cap') { ctx.beginPath(); ctx.arc(x, y, 7, 0, Math.PI * 2); ctx.fillStyle = '#fff8e6'; ctx.fill(); ctx.strokeStyle = '#2e2218'; ctx.stroke(); ctx.beginPath(); for (let j = 0; j < 10; j++) { const a = -Math.PI / 2 + j * Math.PI / 5, rr = j % 2 ? 2.3 : 5.2; ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } ctx.closePath(); ctx.fillStyle = '#a31b1b'; ctx.fill(); }
-      else if (k === 'city') { ctx.beginPath(); ctx.arc(x, y, 4.2, 0, Math.PI * 2); ctx.fillStyle = '#fff8e8'; ctx.fill(); ctx.strokeStyle = '#2a1d12'; ctx.lineWidth = 1.6; ctx.stroke(); ctx.beginPath(); ctx.arc(x, y, 1.7, 0, Math.PI * 2); ctx.fillStyle = '#2a1d12'; ctx.fill(); }
-      else if (k === 'town') { ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fillStyle = '#fff8e8'; ctx.fill(); ctx.strokeStyle = '#2a1d12'; ctx.stroke(); }
+      else if (k === 'city') { ctx.fillStyle = '#fff8e8'; ctx.strokeStyle = '#2a1d12'; ctx.lineWidth = 1.6; ctx.fillRect(x - 5, y - 5, 10, 10); ctx.strokeRect(x - 5, y - 5, 10, 10); ctx.fillStyle = '#2a1d12'; ctx.fillRect(x - 2.2, y - 2.2, 4.5, 4.5); }
+      else if (k === 'town') { ctx.beginPath(); ctx.arc(x, y, 3.2, 0, Math.PI * 2); ctx.fillStyle = '#fff8e8'; ctx.fill(); ctx.strokeStyle = '#2a1d12'; ctx.stroke(); }
       else if (k === 'vil') { ctx.beginPath(); ctx.arc(x, y, 1.9, 0, Math.PI * 2); ctx.fillStyle = '#3a2a1c'; ctx.fill(); }
       else if (k === 'road') { ctx.strokeStyle = '#7b4a22'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(x - 9, y - 2); ctx.lineTo(x + 9, y - 2); ctx.stroke(); ctx.lineWidth = 1.1; ctx.setLineDash([4, 2]); ctx.beginPath(); ctx.moveTo(x - 9, y + 3); ctx.lineTo(x + 9, y + 3); ctx.stroke(); }
       else if (k === 'border') { ctx.strokeStyle = 'rgba(105,30,75,0.9)'; ctx.lineWidth = 1.6; ctx.setLineDash([8, 3, 1.5, 3]); ctx.beginPath(); ctx.moveTo(x - 10, y); ctx.lineTo(x + 10, y); ctx.stroke(); }
