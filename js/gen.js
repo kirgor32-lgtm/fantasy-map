@@ -499,6 +499,39 @@ function generate(P) {
   placeSet(nStates, Math.sqrt(landArea / nStates) * 0.62, true);
   const nCap = burgs.length;
   placeSet(nTowns, Math.sqrt(landArea / (nCap + nTowns)) * 0.55, false);
+  // fill empty lands with villages: no habitable spot farther than gapKm from a settlement
+  // (deserts, tundra and high mountains are allowed to stay sparser; glaciers stay empty)
+  {
+    const cellKm = spacing * kmPerUnit;
+    const gapKm = clamp(75 * Math.sqrt(60 / Math.max(10, nTowns)), 35, 140);
+    const loose = c => { const b = biome[c]; return (b === 1 || b === 2 || b === 10 || b === 13) ? 1.8 : h[c] > 0.6 ? 1.5 : (b === 9 || b === 7 || b === 12) ? 1.25 : 1; };
+    const dist = new Float32Array(n).fill(Infinity);
+    const spread = src => { // BFS over land/lake from src, updating nearest-settlement distance (in km)
+      const q = [src]; dist[src] = 0;
+      for (let qi = 0; qi < q.length; qi++) { const c = q[qi]; const nd = dist[c] + cellKm;
+        if (nd > gapKm * 2.2) continue;
+        for (let k = nOff[c]; k < nOff[c + 1]; k++) { const o = nbr[k]; if (o < 0 || type[o] === 1 || nd >= dist[o]) continue; dist[o] = nd; q.push(o); } }
+    };
+    for (const b of burgs) spread(b.cell);
+    const cand = landCells.filter(c => biome[c] !== 11 && BIOMES[biome[c]].hab > 0);
+    let maxS = 1; for (const c of cand) if (score[c] > maxS) maxS = score[c];
+    for (let guard = 0; guard < 4000; guard++) {
+      let best = -1, bv = 0;
+      for (const c of cand) {
+        if (burgCell[c] >= 0) continue;
+        const over = dist[c] / (gapKm * loose(c)); if (over < 1) continue;
+        const v = over * (0.55 + 0.45 * score[c] / maxS);
+        if (v > bv) { bv = v; best = c; }
+      }
+      if (best < 0) break;
+      // settle at the most attractive cell close to the chosen gap
+      let pick = best, ps = score[best];
+      for (let k = nOff[best]; k < nOff[best + 1]; k++) { const o = nbr[k]; if (o >= 0 && type[o] === 0 && burgCell[o] < 0 && biome[o] !== 11 && score[o] > ps) { ps = score[o]; pick = o; } }
+      burgCell[pick] = burgs.length;
+      burgs.push({ id: burgs.length, cell: pick, x: cx[pick], y: cy[pick], capital: false, filler: true });
+      spread(pick);
+    }
+  }
   T.burgs = now() - t; t = now();
 
   // ---- cultures ----
@@ -596,7 +629,7 @@ function generate(P) {
     b.name = b.capital ? namer(cultures[b.culture].lang, 11) : namer(cultures[Math.max(0, b.culture)].lang, 11);
     b.port = coastal(c); b.river = isRiver(c); b.lake = nearLake(c);
     const sc = score[c];
-    b.pop = b.capital ? +(8 + sc * 0.28 * (0.6 + rand() * 0.8)).toFixed(1) : +(0.4 + sc * 0.07 * (0.35 + rand() * 1.0)).toFixed(1);
+    b.pop = b.capital ? +(8 + sc * 0.28 * (0.6 + rand() * 0.8)).toFixed(1) : b.filler ? +(0.2 + sc * 0.025 * (0.4 + rand() * 1.2)).toFixed(1) : +(0.4 + sc * 0.07 * (0.35 + rand() * 1.0)).toFixed(1);
     b.type = b.capital ? 'Столица' : b.pop >= 10 ? 'Город' : b.pop >= 3 ? 'Городок' : 'Деревня';
     b.elev = Math.round(h[c] * 4500);
     if (b.state >= 0) { states[b.state].burgs++; states[b.state].urban += b.pop * 1000; }

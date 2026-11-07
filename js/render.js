@@ -324,7 +324,7 @@ function render(ctx, m, V, O) {
   const FONT = ['700 {s}px "Cormorant SC", Georgia, serif', '700 {s}px "Cormorant Garamond", Georgia, serif', '600 {s}px "Cormorant Garamond", Georgia, serif', 'italic 500 {s}px "Cormorant Garamond", Georgia, serif'];
   const COL = ['#7a1414', '#22160c', '#33241a', '#4a3a2c'];
   const font = (t, s) => FONT[t].replace('{s}', s.toFixed(1));
-  const iconVis = t => t <= 1 || (t === 2 && z >= 0.85) || (t === 3 && z >= 1.3);
+  const iconVis = t => t <= 2 || (t === 3 && z >= 0.75);
   const labelVis = t => t <= 1 || (t === 2 && z >= 1.25) || (t === 3 && z >= 2);
   const star = (x, y, r) => { ctx.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * 0.45 : r; ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } ctx.closePath(); };
   // 1. settlement icons (reserve space)

@@ -23,7 +23,7 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;',
 
 // ---------- worker ----------
 let worker = null;
-try { worker = new Worker('js/gen.js?v=9'); } catch (e) { worker = null; }
+try { worker = new Worker('js/gen.js?v=10'); } catch (e) { worker = null; }
 function generate(params) {
   return new Promise((resolve, reject) => {
     const local = () => setTimeout(() => { try { resolve(FMG.generate(params)); } catch (e) { reject(e); } }, 30);
