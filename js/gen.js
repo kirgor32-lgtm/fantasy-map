@@ -98,6 +98,64 @@ const LANGS = {
   dwarf: { name: 'Подгорный народ', on: ['мзу', 'нчу', 'бтар', 'арк', 'нгу', 'мзин', 'зан', 'рал', 'тхал', 'рук', 'бам', 'дер', 'кель', 'амч', 'ну'], mid: ['а', 'у', 'ар'], end: ['анд', 'эзал', 'ард', 'улм', 'чанд', 'ит', 'ар', 'ак', 'унз', 'ферн'], forms: ['Твердыня', 'Королевство', 'Каганат'] }
 };
 const LANG_KEYS = Object.keys(LANGS);
+// culture names are human ethnic groups (races live inside states, they don't own them)
+LANGS.elf.name = 'Сильванцы'; LANGS.orc.name = 'Степняки'; LANGS.dwarf.name = 'Горцы';
+
+// Races from the D&D character editor (ids = editor ids). `where` follows the editor lore (dnd.su texts).
+const RACES = {
+  'human': { name: 'Люди', where: 'Повсюду: строят города и королевства, основа населения всех государств' },
+  'high-elf': { name: 'Высокие эльфы', where: 'Города со шпилями в древних лесах у рек и побережий' },
+  'wood-elf': { name: 'Лесные эльфы', where: 'Глубины древних лесов вдали от людских городов' },
+  'drow': { name: 'Дроу', where: 'Подземье под горами; на поверхность выходят редко' },
+  'mountain-dwarf': { name: 'Горные дворфы', where: 'Подгорные королевства: шахты и твердыни глубоко под горами' },
+  'hill-dwarf': { name: 'Холмовые дворфы', where: 'Холмы и предгорья' },
+  'lightfoot-halfling': { name: 'Легконогие полурослики', where: 'Живут бок о бок с другими народами или кочуют по дорогам' },
+  'stout-halfling': { name: 'Крепкие полурослики', where: 'Тёплые плодородные долины и речные поймы' },
+  'forest-gnome': { name: 'Лесные гномы', where: 'Скрытые общины в глубине лесов, по соседству с эльфами' },
+  'rock-gnome': { name: 'Скальные гномы', where: 'Норы в лесистых холмах' },
+  'dragonborn': { name: 'Драконорождённые', where: 'Кланы на диких высотах и пустошах — там, где логова драконов; многие служат в городах наёмниками' },
+  'half-elf': { name: 'Полуэльфы', where: 'Своих государств нет — живут в городах, где рядом люди и эльфы' },
+  'half-orc': { name: 'Полуорки', where: 'Варварские племена в степях и пустошах, а также городские трущобы' },
+  'tiefling': { name: 'Тифлинги', where: 'Небольшие общины в крупных людских городах' },
+  'air-genasi': { name: 'Дженази воздуха', where: 'Без своих городов; встречаются в высокогорных поселениях' },
+  'earth-genasi': { name: 'Дженази земли', where: 'Без своих городов; встречаются в горных и шахтёрских городах' },
+  'fire-genasi': { name: 'Дженази огня', where: 'Без своих городов; встречаются в городах жарких пустынь' },
+  'water-genasi': { name: 'Дженази воды', where: 'Без своих городов; встречаются в портах' },
+  'kenku': { name: 'Кенку', where: 'Мрачные города, наводнённые преступностью; верхние этажи башен' },
+  'shifter': { name: 'Шифтеры', where: 'Дикие леса и тайга на грани дикой природы и цивилизации' },
+  'aasimar': { name: 'Аазимары', where: 'Рождаются среди людей, чаще в крупных городах' },
+  'tabaxi': { name: 'Табакси', where: 'Родом из далёких земель; странствуют, заходят в порты' },
+  'goliath': { name: 'Голиафы', where: 'Кочуют по высочайшим горным вершинам выше границы леса' },
+  'triton': { name: 'Тритоны', where: 'Поселения в океанских глубинах у побережья' },
+  'goblin': { name: 'Гоблины', where: 'Племена в холмах, пещерах и чащах; кварталы больших городов' },
+  'centaur': { name: 'Кентавры', where: 'Открытые равнины и степи — простор и свобода' },
+  'changeling': { name: 'Ченджлинги', where: 'Скрываются в больших городах или странствуют' },
+  'grung': { name: 'Грунги', where: 'Дождевые леса и тропические джунгли' }
+};
+const EDITOR_RACE = { 'human': 'human', 'high-elf': 'elf', 'wood-elf': 'elf', 'drow': 'elf', 'mountain-dwarf': 'dwarf', 'hill-dwarf': 'dwarf', 'lightfoot-halfling': 'halfling', 'stout-halfling': 'halfling', 'forest-gnome': 'gnome', 'rock-gnome': 'gnome', 'air-genasi': 'genasi', 'earth-genasi': 'genasi', 'fire-genasi': 'genasi', 'water-genasi': 'genasi' };
+for (const k in RACES) RACES[k].race = EDITOR_RACE[k] || k;
+// races that occupy territory on the map, in placement order (rare habitats first)
+// size = share of land per area, builds = founds own towns (majority in them)
+const FOLK = [
+  { id: 'triton', color: '#2c6e8f', size: 0.035, areas: 2, sea: true, builds: true },
+  { id: 'mountain-dwarf', color: '#7a4b2a', size: 0.035, areas: 2, builds: true },
+  { id: 'goliath', color: '#6b6f7a', size: 0.022, areas: 2 },
+  { id: 'drow', color: '#4b2d5c', size: 0.025, areas: 1, under: true, builds: true },
+  { id: 'grung', color: '#3f8a3a', size: 0.018, areas: 1 },
+  { id: 'dragonborn', color: '#a3362a', size: 0.016, areas: 1, builds: true },
+  { id: 'wood-elf', color: '#2f6b32', size: 0.035, areas: 2, builds: true },
+  { id: 'forest-gnome', color: '#5c7d2e', size: 0.012, areas: 1, builds: true },
+  { id: 'high-elf', color: '#3c6fa0', size: 0.025, areas: 1, builds: true },
+  { id: 'hill-dwarf', color: '#8c5a2b', size: 0.028, areas: 1, builds: true },
+  { id: 'rock-gnome', color: '#8a6d2f', size: 0.015, areas: 1, builds: true },
+  { id: 'shifter', color: '#6d4e33', size: 0.025, areas: 1 },
+  { id: 'centaur', color: '#9a6a1c', size: 0.03, areas: 1 },
+  { id: 'half-orc', color: '#5e6b2a', size: 0.03, areas: 2 },
+  { id: 'goblin', color: '#6c7a2a', size: 0.018, areas: 1 },
+  { id: 'stout-halfling', color: '#a0782a', size: 0.02, areas: 1, builds: true }
+];
+const FOLK_BY = {};
+for (const F of FOLK) { Object.assign(F, { name: RACES[F.id].name, where: RACES[F.id].where, race: RACES[F.id].race, sub: F.id }); FOLK_BY[F.id] = F; }
 const RELATIONS = [['Союз', 0.14], ['Дружба', 0.2], ['Нейтралитет', 0.32], ['Соперничество', 0.22], ['Война', 0.12]];
 
 function makeNamer(rand, used) {
@@ -350,11 +408,17 @@ function generate(P) {
   { const q = []; for (let c = 0; c < n; c++) if (type[c] === 1) { distSea[c] = 0; q.push(c); }
     for (let qi = 0; qi < q.length; qi++) { const c = q[qi]; for (let k = nOff[c]; k < nOff[c + 1]; k++) { const o = nbr[k]; if (o >= 0 && distSea[o] < 0) { distSea[o] = distSea[c] + 1; q.push(o); } } } }
   let maxDist = 1; for (let c = 0; c < n; c++) maxDist = Math.max(maxDist, distSea[c]);
-  const CL = { temperate: [-12, 31], cold: [-24, 16], hot: [6, 38] }[climate] || [-12, 31];
+  // latitude is measured across the continent itself, so the north tip is always polar
+  // and the south tip always hot (glaciers + deserts on every map)
+  const CL = { temperate: [-8, 37], cold: [-16, 24], hot: [6, 44] }[climate] || [-8, 37];
+  let minY = H, maxY = 0;
+  for (let c = 0; c < n; c++) if (type[c] !== 1) { if (cy[c] < minY) minY = cy[c]; if (cy[c] > maxY) maxY = cy[c]; }
+  const latSpan = Math.max(1, maxY - minY);
+  const latOf = c => clamp((cy[c] - minY) / latSpan, -0.1, 1.1);
   const temp = new Float32Array(n), moist = new Float32Array(n);
   for (let c = 0; c < n; c++) {
-    const lat = cy[c] / H; const hl = Math.max(0, h[c]);
-    temp[c] = CL[0] + (CL[1] - CL[0]) * lat - hl * 30 + fbm(nz[5], cx[c] / 300, cy[c] / 300, 2) * 4;
+    const lat = latOf(c); const hl = Math.max(0, h[c]);
+    temp[c] = CL[0] + (CL[1] - CL[0]) * lat - hl * 24 + fbm(nz[5], cx[c] / 300, cy[c] / 300, 2) * 4;
     if (type[c] === 1) { moist[c] = 1; continue; }
     const u = cx[c] / (H / 2), v = cy[c] / (H / 2);
     let m = 0.52 + 0.55 * fbm(nz[6], u * 1.4 + 11, v * 1.4 - 7, 4);
@@ -363,6 +427,9 @@ function generate(P) {
     for (let s = 1; s <= 5; s++) { const q = cellAt(M, cx[c] - s * spacing * 1.6, cy[c]); if (type[q] === 0) mx = Math.max(mx, h[q]); }
     m -= Math.max(0, mx - hl) * 0.9;
     if (temp[c] > 22) m -= (temp[c] - 22) * 0.012;
+    // subtropical dry belt in the south interior (Hadley cell) -> real deserts
+    const belt = clamp((lat - 0.58) / 0.22, 0, 1);
+    m -= belt * (0.42 + 0.25 * fbm(nz[6], u * 2.1 - 5, v * 2.1 + 3, 2)) * (1 - Math.exp(-distSea[c] / 3));
     moist[c] = clamp(m, 0, 1);
   }
   // ---- flux ----
@@ -379,12 +446,12 @@ function generate(P) {
     if (type[c] !== 0) { biome[c] = 0; continue; }
     const hl = h[c], tt = temp[c], m = moist[c]; let b;
     if (hl > 0.8) b = tt < 2 ? 11 : 13;
-    else if (tt < -7) b = 11;
+    else if (tt < -6) b = 11;
     else if (tt < 0) b = m > 0.55 ? 9 : 10;
     else if (tt < 7) b = m < 0.28 ? 10 : 9;
     else if (tt < 19) b = (m > 0.82 && hl < 0.18) ? 12 : m < 0.2 ? 2 : m < 0.44 ? 4 : m < 0.72 ? 6 : 8;
     else if (tt < 25) b = m < 0.18 ? 1 : m < 0.4 ? 4 : m < 0.7 ? 5 : (m > 0.86 && hl < 0.15) ? 12 : 8;
-    else b = m < 0.26 ? 1 : m < 0.46 ? 3 : m < 0.72 ? 5 : (m > 0.85 && hl < 0.15) ? 12 : 7;
+    else b = m < 0.26 ? 1 : m < 0.42 ? 3 : m < 0.58 ? 5 : (m > 0.85 && hl < 0.15) ? 12 : 7;
     biome[c] = b;
     let gx = 0, gy = 0;
     for (let k = nOff[c]; k < nOff[c + 1]; k++) {
@@ -543,6 +610,129 @@ function generate(P) {
   const pickRel = () => { let r = rand(); for (const [nm, w] of RELATIONS) { if ((r -= w) <= 0) return nm; } return 'Нейтралитет'; };
   states.forEach(s => { s.neighbors = [...neigh[s.id]]; s.relations = {}; });
   states.forEach(s => s.neighbors.forEach(o => { if (o > s.id) { const r = pickRel(); s.relations[o] = r; states[o].relations[s.id] = r; } }));
+
+  // ---- peoples (races of the character editor) living in fitting biomes inside states ----
+  const folk = new Int16Array(n).fill(-1);
+  const peoples = [];
+  {
+    const distBurg = new Int32Array(n).fill(-1);
+    { const q = []; for (const b of burgs) { distBurg[b.cell] = 0; q.push(b.cell); }
+      for (let qi = 0; qi < q.length; qi++) { const c = q[qi]; for (let k = nOff[c]; k < nOff[c + 1]; k++) { const o = nbr[k]; if (o >= 0 && distBurg[o] < 0) { distBurg[o] = distBurg[c] + 1; q.push(o); } } } }
+    const distLand = new Int32Array(n).fill(-1);
+    { const q = []; for (let c = 0; c < n; c++) if (type[c] !== 1) { distLand[c] = 0; q.push(c); }
+      for (let qi = 0; qi < q.length; qi++) { const c = q[qi]; for (let k = nOff[c]; k < nOff[c + 1]; k++) { const o = nbr[k]; if (o >= 0 && distLand[o] < 0) { distLand[o] = distLand[c] + 1; q.push(o); } } } }
+    const L0 = c => type[c] === 0;
+    const forest = b => b === 5 || b === 6 || b === 8;
+    const wild = c => Math.min(1, distBurg[c] / 4); // 0 near towns, 1 far away
+    const band = (v, a, b, soft) => v < a ? Math.max(0, 1 - (a - v) / soft) : v > b ? Math.max(0, 1 - (v - b) / soft) : 1;
+    for (const F of FOLK) {
+      const fit = c => {
+        const b = biome[c], hh = h[c], tt = temp[c];
+        switch (F.id) {
+          case 'triton': return type[c] === 1 && distLand[c] >= 2 && distLand[c] <= 7 ? 0.6 + (h[c] < -0.25 ? 0.4 : 0) : 0;
+          case 'goliath': return L0(c) && hh > 0.6 ? 0.5 + hh * 0.5 : 0;
+          case 'drow': return L0(c) && hh > 0.36 && distBurg[c] >= 2 ? 0.3 + hh * 0.4 + wild(c) * 0.3 : 0;
+          case 'mountain-dwarf': return L0(c) && hh > 0.45 ? 0.5 + band(hh, 0.5, 0.66, 0.15) * 0.5 - (b === 11 ? 0.3 : 0) : 0;
+          case 'grung': return L0(c) && (b === 7 || (b === 12 && tt > 18) || (b === 8 && tt > 21)) ? 0.6 + wild(c) * 0.4 : 0;
+          case 'dragonborn': return L0(c) && (hh > 0.45 || b === 1 || b === 13) && b !== 11 ? 0.4 + wild(c) * 0.6 : 0;
+          case 'wood-elf': return L0(c) && (forest(b) || b === 9) && tt > -2 && tt < 25 ? (b === 9 ? 0.35 : 0.6) + wild(c) * 0.4 : 0;
+          case 'forest-gnome': return L0(c) && forest(b) && hh < 0.45 ? 0.5 + wild(c) * 0.5 : 0;
+          case 'high-elf': return L0(c) && (forest(b) || b === 4 || b === 9) && tt > 2 && tt < 24 ? 0.5 + (isRiver(c) || coastal(c) ? 0.3 : 0) + band(hh, 0.1, 0.4, 0.2) * 0.2 : 0;
+          case 'hill-dwarf': return L0(c) && hh >= 0.28 && hh <= 0.52 && b !== 11 ? 0.7 : 0;
+          case 'rock-gnome': return L0(c) && hh >= 0.2 && hh <= 0.45 && (forest(b) || b === 4 || b === 9) ? 0.7 : 0;
+          case 'shifter': return L0(c) && (b === 9 || forest(b) || b === 12) && distBurg[c] >= 2 ? 0.4 + wild(c) * 0.6 : 0;
+          case 'centaur': return L0(c) && (b === 4 || b === 3) && hh < 0.35 ? 0.5 + wild(c) * 0.5 : 0;
+          case 'half-orc': return L0(c) && (b === 2 || b === 10 || b === 3 || b === 4 || b === 9) && distBurg[c] >= 2 ? 0.4 + wild(c) * 0.6 : 0;
+          case 'goblin': return L0(c) && (hh > 0.25 || forest(b) || b === 12) && b !== 11 && distBurg[c] >= 1 ? 0.4 + wild(c) * 0.4 : 0;
+          case 'stout-halfling': return L0(c) && (b === 4 || b === 5 || b === 6) && tt > 8 && hh < 0.4 ? 0.5 + (isRiver(c) ? 0.3 : 0) + (distBurg[c] <= 3 ? 0.2 : 0) : 0;
+          default: return 0;
+        }
+      };
+      const pool = F.sea ? null : landCells;
+      const cand = []; const sc = new Float32Array(n);
+      for (let c = 0; c < n; c++) { if (folk[c] >= 0) continue; if (!F.sea && type[c] !== 0) continue; const v = fit(c); if (v > 0) { sc[c] = v * (0.85 + rand() * 0.3); cand.push(c); } }
+      void pool;
+      const base = F.sea ? landCells.length * 0.6 : landCells.length;
+      const target = Math.max(12, Math.round(base * F.size));
+      const minCells = Math.max(6, Math.round(target * 0.15));
+      if (P.debugFolk) console.log(F.id, 'cand', cand.length, 'target', target);
+      if (cand.length < minCells) { peoples.push({ id: peoples.length, key: F.id, absent: true, cells: 0 }); continue; }
+      cand.sort((a, b) => sc[b] - sc[a]);
+      const areas = [];
+      for (let a = 0; a < F.areas; a++) {
+        const seedC = cand.find(c => folk[c] < 0 && areas.every(o => Math.hypot(cx[o.seed] - cx[c], cy[o.seed] - cy[c]) > W * 0.22));
+        if (seedC == null) break;
+        const fid = peoples.length + areas.length;
+        const heap = new Heap(); heap.push(seedC, -sc[seedC]); let got = 0; const mine = [];
+        const seen = new Set([seedC]);
+        while (heap.size && got < target) {
+          const c = heap.pop(); if (folk[c] >= 0) continue;
+          folk[c] = fid; mine.push(c); got++;
+          for (let k = nOff[c]; k < nOff[c + 1]; k++) { const q = nbr[k]; if (q < 0 || seen.has(q) || folk[q] >= 0 || sc[q] <= 0) continue; seen.add(q); heap.push(q, -sc[q] + Math.hypot(cx[q] - cx[seedC], cy[q] - cy[seedC]) / spacing * 0.02); }
+        }
+        if (got < minCells) { for (const c of mine) folk[c] = -1; continue; }
+        areas.push({ seed: seedC, cells: mine });
+      }
+      if (!areas.length) { peoples.push({ id: peoples.length, key: F.id, absent: true, cells: 0 }); continue; }
+      for (const A of areas) {
+        const fid = peoples.length;
+        for (const c of A.cells) folk[c] = fid; // re-index after possible rollbacks
+        // label anchor: cell of the area farthest from its edge
+        const inA = new Set(A.cells); let best = A.cells[0], bd = -1;
+        const dd = new Map(); const q = [];
+        for (const c of A.cells) { let edge = false; for (let k = nOff[c]; k < nOff[c + 1]; k++) { const o = nbr[k]; if (o < 0 || !inA.has(o)) { edge = true; break; } } if (edge) { dd.set(c, 0); q.push(c); } }
+        for (let qi = 0; qi < q.length; qi++) { const c = q[qi]; const d0 = dd.get(c); if (d0 > bd) { bd = d0; best = c; } for (let k = nOff[c]; k < nOff[c + 1]; k++) { const o = nbr[k]; if (o >= 0 && inA.has(o) && !dd.has(o)) { dd.set(o, d0 + 1); q.push(o); } } }
+        const inStates = {}; for (const c of A.cells) if (state[c] >= 0) inStates[state[c]] = (inStates[state[c]] || 0) + 1;
+        peoples.push({ id: fid, key: F.id, name: F.name, race: F.race, sub: F.sub, color: F.color, where: F.where, lore: F.lore, sea: !!F.sea, under: !!F.under,
+          cells: A.cells.length, lx: cx[best], ly: cy[best], states: Object.entries(inStates).sort((a, b) => b[1] - a[1]).map(([s, k]) => [+s, k]) });
+      }
+    }
+    // composition of every settlement
+    const folkNear = (c, R) => { // folk ids within R cells
+      const res = new Map(); const seen = new Set([c]); let fr = [c];
+      for (let d = 0; d <= R; d++) { const nx = []; for (const x of fr) { if (folk[x] >= 0 && !peoples[folk[x]].sea) res.set(folk[x], Math.min(res.get(folk[x]) ?? 99, d)); for (let k = nOff[x]; k < nOff[x + 1]; k++) { const o = nbr[k]; if (o >= 0 && !seen.has(o)) { seen.add(o); nx.push(o); } } } fr = nx; }
+      return res;
+    };
+    for (const b of burgs) {
+      const sh = {}; const add = (k, v) => { sh[k] = (sh[k] || 0) + v; };
+      const big = b.pop >= 10 || b.capital, mid = b.pop >= 3;
+      const near = folkNear(b.cell, 3);
+      for (const [fid, d] of near) {
+        const F = FOLK_BY[peoples[fid].key];
+        if (d === 0) add(F.id, b.capital ? 10 + rand() * 15 : F.builds ? 55 + rand() * 30 : 18 + rand() * 20);
+        else add(F.id, (F.builds ? 10 : 5) * (4 - d) / 3 * (0.6 + rand() * 0.8));
+      }
+      const elves = [...near.keys()].some(f => /elf/.test(peoples[f].key));
+      add('half-elf', (elves ? 6 : 1.5) * (big ? 1.6 : 1) * (0.5 + rand()));
+      add('lightfoot-halfling', (mid ? 4 : 6) * (0.4 + rand()));
+      if (big) { add('tiefling', 2 + rand() * 4); add('changeling', rand() * 2.5); add('half-orc', 1 + rand() * 3); add('goblin', rand() * 3); add('aasimar', rand() * 1.5); add('dragonborn', rand() * 2); }
+      if (big && rand() < 0.6) add('kenku', 1 + rand() * 3);
+      if (b.port && mid) { add('tabaxi', 0.5 + rand() * 2.5); add('water-genasi', rand() * 2.5); if (rand() < 0.4) add('triton', rand() * 2); }
+      const tt = temp[b.cell];
+      if (mid && (biome[b.cell] === 1 || tt > 24)) add('fire-genasi', 0.5 + rand() * 2.5);
+      if (mid && h[b.cell] > 0.4) add('earth-genasi', 0.5 + rand() * 2);
+      if (mid && h[b.cell] > 0.5 && rand() < 0.5) add('air-genasi', 0.5 + rand() * 1.5);
+      let other = 0; for (const k in sh) other += sh[k];
+      const scale = other > 92 ? 92 / other : 1; const out = [];
+      for (const k in sh) { const v = sh[k] * scale; if (v >= 1) out.push([k, Math.round(v)]); }
+      const hum = 100 - out.reduce((s, x) => s + x[1], 0); out.push(['human', hum]);
+      out.sort((a, b) => b[1] - a[1]); b.races = out;
+    }
+    // per-state composition by population (rural by cells + urban by settlements)
+    states.forEach(s => { s.races = {}; });
+    for (let c = 0; c < n; c++) {
+      if (type[c] !== 0 || state[c] < 0) continue;
+      const p = BIOMES[biome[c]].hab / 100 * cellAreaKm * 9; if (!p) continue;
+      const S = states[state[c]].races;
+      if (folk[c] >= 0) { const F = FOLK_BY[peoples[folk[c]].key]; S[F.id] = (S[F.id] || 0) + p * (F.builds ? 0.75 : 0.5); S.human = (S.human || 0) + p * (F.builds ? 0.25 : 0.5); }
+      else S.human = (S.human || 0) + p;
+    }
+    for (const b of burgs) { if (b.state < 0) continue; const S = states[b.state].races; for (const [k, v] of b.races) S[k] = (S[k] || 0) + b.pop * 1000 * v / 100; }
+    states.forEach(s => {
+      const tot = Object.values(s.races).reduce((a, b) => a + b, 0) || 1;
+      s.races = Object.entries(s.races).map(([k, v]) => [k, v / tot * 100]).filter(x => x[1] >= 0.5).sort((a, b) => b[1] - a[1]);
+    });
+  }
   T.names = now() - t; t = now();
 
   // ---- rivers ----
@@ -761,17 +951,17 @@ function generate(P) {
   return {
     ...M, seed, params: { seed, cells: N, land: landFrac, rough, states: nStates, towns: nTowns, rivers: riverFrac, km: mapKm, climate, shape },
     kmPerUnit, cellAreaKm, h, type, biome, temp, moist, flux, shade, riverThr, state, culture,
-    burgs, states, cultures, rivers, roads, coast, lakes, borders, icons, seas, name, timings: T,
+    burgs, states, cultures, rivers, roads, coast, lakes, borders, icons, seas, folk, peoples, name, timings: T,
     landCells: landCells.length
   };
 }
 
-const API = { generate, cellAt, loops, chain, BIOMES, LANGS, hashStr };
+const API = { generate, cellAt, loops, chain, BIOMES, LANGS, RACES, hashStr };
 if (IS_WORKER) {
   self.onmessage = (e) => {
     try {
       const map = generate(e.data);
-      const tr = []; for (const k of ['cx', 'cy', 'vx', 'vy', 'nOff', 'nbr', 'ev1', 'ev2', 'h', 'type', 'biome', 'temp', 'moist', 'flux', 'shade', 'state', 'culture']) tr.push(map[k].buffer);
+      const tr = []; for (const k of ['cx', 'cy', 'vx', 'vy', 'nOff', 'nbr', 'ev1', 'ev2', 'h', 'type', 'biome', 'temp', 'moist', 'flux', 'shade', 'state', 'culture', 'folk']) tr.push(map[k].buffer);
       self.postMessage({ ok: true, map }, tr);
     } catch (err) { self.postMessage({ ok: false, error: String(err && err.stack || err) }); }
   };

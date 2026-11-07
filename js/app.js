@@ -6,7 +6,7 @@ const canvas = $('#map'), ctx = canvas.getContext('2d', { alpha: false });
 const DEF = { cells: 12000, land: 0.42, rough: 0.5, states: 8, towns: 60, rivers: 0.07, km: 2400, climate: 'temperate', shape: 'classic' };
 const S = {
   map: null, params: null, edits: { states: {}, burgs: {}, name: null },
-  layers: { biomes: true, relief: true, states: true, borders: true, rivers: true, roads: true, burgs: true, labels: true, waves: true, hex: false },
+  layers: { biomes: true, relief: true, states: true, borders: true, rivers: true, roads: true, burgs: true, labels: true, waves: true, hex: false, folk: true, legend: true },
   hexKm: 40, selState: null, selBurg: null, ruler: null, rulerOn: false
 };
 let dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -15,11 +15,15 @@ let view = { scale: 1, x: 0, y: 0 }, fit = 1;
 let cache = null, crisp = null, crispTimer = 0, rafId = 0, sortedBurgs = [];
 const randSeed = () => Math.random().toString(36).slice(2, 8);
 const fmt = n => Math.round(n).toLocaleString('ru-RU');
+const EDITOR = 'https://kirgor32-lgtm.github.io/dnd-bg3-creator/';
+const raceName = k => (FMG.RACES[k] || { name: k }).name;
+const racePic = k => `${EDITOR}assets/img/races/${k}.jpg`;
+const raceBar = (list, max) => list.slice(0, max || 8).map(([k, v]) => `<div class="rrow" data-race="${k}"><span>${raceName(k)}</span><i style="width:${Math.max(2, Math.min(100, v))}%"></i><b>${v < 1 ? '<1' : Math.round(v)}%</b></div>`).join('');
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 // ---------- worker ----------
 let worker = null;
-try { worker = new Worker('js/gen.js?v=4'); } catch (e) { worker = null; }
+try { worker = new Worker('js/gen.js?v=7'); } catch (e) { worker = null; }
 function generate(params) {
   return new Promise((resolve, reject) => {
     const local = () => setTimeout(() => { try { resolve(FMG.generate(params)); } catch (e) { reject(e); } }, 30);
@@ -130,7 +134,7 @@ async function makeMap(params, edits) {
   S.tGen = tGen; S.tWorker = m.timings.total;
   writeParams(m.params); $('#inName').value = m.name;
   fitView(); buildCache(); renderCrisp();
-  ld.classList.add('off'); closeInfo(); renderStatesList(); persist(); updateStats();
+  ld.classList.add('off'); closeInfo(); renderStatesList(); renderFolkList(); persist(); updateStats();
 }
 function persist() {
   const data = { params: S.params, edits: S.edits };
@@ -227,11 +231,12 @@ function hover(px, py) {
     const c = FMG.cellAt(m, mx, my); const b = burgAt(x, y);
     let html;
     if (b) html = `<b>${esc(b.name)}</b> — ${b.type.toLowerCase()}<br>${fmt(b.pop * 1000)} жителей${b.port ? ' · порт' : ''}`;
-    else if (m.type[c] === 1) html = `<b>Море</b><br>глубина ~${fmt(-m.h[c] * 3500)} м`;
+    else if (m.type[c] === 1) html = `<b>Море</b><br>глубина ~${fmt(-m.h[c] * 3500)} м${m.folk && m.folk[c] >= 0 ? '<br>владения: ' + esc(m.peoples[m.folk[c]].name) : ''}`;
     else if (m.type[c] === 2) html = `<b>Озеро</b>${m.state[c] >= 0 ? '<br>' + esc(m.states[m.state[c]].fullName) : ''}`;
     else {
       const st = m.states[m.state[c]], cu = m.cultures[m.culture[c]];
-      html = `<b>${FMG.BIOMES[m.biome[c]].name}</b>${m.flux[c] > m.riverThr ? ' · река' : ''}<br>высота ${fmt(m.h[c] * 4500)} м · ${Math.round(m.temp[c])}°C<br>${st ? esc(st.fullName) : ''}${cu ? ' · ' + cu.name : ''}`;
+      const fp = m.folk && m.folk[c] >= 0 ? m.peoples[m.folk[c]] : null;
+      html = `<b>${FMG.BIOMES[m.biome[c]].name}</b>${m.flux[c] > m.riverThr ? ' · река' : ''}<br>высота ${fmt(m.h[c] * 4500)} м · ${Math.round(m.temp[c])}°C<br>${st ? esc(st.fullName) : ''}${cu ? ' · ' + cu.name : ''}${fp ? `<br><span style="color:${fp.color};filter:brightness(1.8)">◆</span> земли: ${esc(fp.name)}${fp.under ? ' (Подземье)' : ''}` : ''}`;
     }
     const tip = $('#tip'); tip.innerHTML = html; tip.hidden = false;
     const tw = tip.offsetWidth, th = tip.offsetHeight;
@@ -245,7 +250,10 @@ function click(px, py) {
   const b = burgAt(px, py); if (b) return showBurg(b.id);
   if (mx < 0 || my < 0 || mx > m.W || my > m.H) return closeInfo();
   const c = FMG.cellAt(m, mx, my);
-  if (m.type[c] === 1 || m.state[c] < 0) return closeInfo();
+  if (m.type[c] === 1) return m.folk && m.folk[c] >= 0 ? showFolk(m.folk[c]) : closeInfo();
+  const e2alt = S.selState === m.state[c] && !$('#info').hidden; // second click inside a selected state opens the race land
+  if (e2alt && m.folk && m.folk[c] >= 0) return showFolk(m.folk[c]);
+  if (m.state[c] < 0) return closeInfo();
   showState(m.state[c]);
 }
 
@@ -264,17 +272,68 @@ function showState(id, fly) {
     <input id="edName" value="${esc(s.name)}" maxlength="30" title="Переименовать">
     <table>
       <tr><td>Столица</td><td><a href="#" data-burg="${cap.id}">${esc(cap.name)}</a></td></tr>
-      <tr><td>Народ</td><td>${esc(cu.name)}</td></tr>
+      <tr><td>Культура</td><td>${esc(cu.name)}</td></tr>
       <tr><td>Площадь</td><td>${fmt(area)} км²</td></tr>
       <tr><td>Население</td><td>${fmt(pop)}</td></tr>
       <tr><td>Поселений</td><td>${burgs.length}</td></tr>
     </table>
     <div>${topB}</div>
+    <h3>Население по расам</h3><div class="races">${raceBar(s.races, 9)}</div>
+    ${folkIn(id)}
     ${rel ? `<h3>Отношения с соседями</h3><div class="list">${rel}</div>` : ''}
     <h3>Города</h3><div class="list">${burgs.map(b => `<div class="item" data-burg="${b.id}">${b.capital ? '★ ' : ''}${esc(b.name)}<small>${b.type}, ${fmt(b.pop * 1000)}</small></div>`).join('')}</div>`;
   openInfo();
   $('#edName').addEventListener('change', e => { const v = e.target.value.trim(); if (!v) return; s.name = v; s.fullName = s.form + ' ' + v; S.edits.states[id] = v; refreshLabels(); });
   if (fly) flyTo(s.lx, s.ly, fit * 1.6); else requestDraw();
+}
+function folkIn(id) {
+  const m = S.map; const list = (m.peoples || []).filter(p => !p.absent && p.states.some(([s]) => s === id));
+  if (!list.length) return '';
+  return `<h3>Земли народов</h3><div class="list">${list.map(p => `<div class="item" data-folk="${p.id}"><span class="sw" style="background:${p.color}"></span>${esc(p.name)}${p.under ? ' (Подземье)' : ''}<small>${fmt(p.cells * m.cellAreaKm / 1000)} т.км²</small></div>`).join('')}</div>`;
+}
+function showFolk(id, fly) {
+  const m = S.map, p = m.peoples[id]; S.selState = null; S.selBurg = null; S.selFolk = id;
+  const R = FMG.RACES[p.key];
+  const sts = p.states.map(([s, k]) => `<div class="item" data-state="${s}"><span class="sw" style="background:${m.states[s].color}"></span>${esc(m.states[s].fullName)}<small>${Math.round(k / p.cells * 100)}%</small></div>`).join('');
+  const towns = m.burgs.filter(b => b.races && b.races.some(([k, v]) => k === p.key && v >= 15)).sort((a, b) => b.pop - a.pop).slice(0, 8);
+  const other = (m.peoples || []).filter(o => !o.absent && o.key === p.key && o.id !== id);
+  $('#info').innerHTML = `<button class="close" title="Закрыть">×</button>
+    <div class="form">Земли народа</div>
+    <div class="folkhead"><img src="${racePic(p.key)}" alt="" onerror="this.remove()"><div><h2>${esc(p.name)}</h2><div class="where">${esc(R.where)}</div></div></div>
+    <table>
+      <tr><td>Площадь</td><td>${fmt(p.cells * m.cellAreaKm)} км²</td></tr>
+      <tr><td>Местность</td><td>${p.sea ? 'море у побережья' : topBiomes(id)}</td></tr>
+    </table>
+    ${sts ? `<h3>В каких государствах</h3><div class="list">${sts}</div>` : ''}
+    ${towns.length ? `<h3>Поселения</h3><div class="list">${towns.map(b => `<div class="item" data-burg="${b.id}">${esc(b.name)}<small>${b.type}, ${b.races.find(x => x[0] === p.key)[1]}%</small></div>`).join('')}</div>` : ''}
+    ${other.length ? `<h3>Другие земли этого народа</h3><div class="list">${other.map(o => `<div class="item" data-folk="${o.id}">${esc(o.name)}<small>${fmt(o.cells * m.cellAreaKm / 1000)} т.км²</small></div>`).join('')}</div>` : ''}
+    <a class="ed" href="${EDITOR}" target="_blank" rel="noopener">Создать персонажа в редакторе →</a>`;
+  openInfo();
+  if (fly) flyTo(p.lx, p.ly, fit * 2); else requestDraw();
+}
+function topBiomes(id) {
+  const m = S.map, cnt = {}; let tot = 0;
+  for (let c = 0; c < m.n; c++) if (m.folk[c] === id && m.type[c] === 0) { cnt[m.biome[c]] = (cnt[m.biome[c]] || 0) + 1; tot++; }
+  return Object.entries(cnt).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([b, k]) => `${FMG.BIOMES[b].name.toLowerCase()} ${Math.round(k / tot * 100)}%`).join(', ');
+}
+function showRace(key) {
+  const m = S.map; const p = (m.peoples || []).find(o => o.key === key && !o.absent);
+  if (p) return showFolk(p.id, true);
+  const R = FMG.RACES[key]; S.selState = null; S.selBurg = null;
+  const towns = m.burgs.filter(b => b.races && b.races.some(([k]) => k === key)).map(b => [b, b.races.find(x => x[0] === key)[1]]).sort((a, b) => b[0].pop * b[1] - a[0].pop * a[1]).slice(0, 10);
+  $('#info').innerHTML = `<button class="close" title="Закрыть">×</button>
+    <div class="form">Раса</div>
+    <div class="folkhead"><img src="${racePic(key)}" alt="" onerror="this.remove()"><div><h2>${esc(R.name)}</h2><div class="where">${esc(R.where)}</div></div></div>
+    ${towns.length ? `<h3>Где встречаются</h3><div class="list">${towns.map(([b, v]) => `<div class="item" data-burg="${b.id}">${esc(b.name)}<small>${b.type}, ${v}%</small></div>`).join('')}</div>` : '<p class="where">На этой карте не нашлось подходящих мест.</p>'}
+    <a class="ed" href="${EDITOR}" target="_blank" rel="noopener">Создать персонажа в редакторе →</a>`;
+  openInfo(); requestDraw();
+}
+function renderFolkList() {
+  const m = S.map; const seen = new Set(); const rows = [];
+  for (const p of m.peoples || []) { if (p.absent || seen.has(p.key)) continue; seen.add(p.key); rows.push(`<div class="item" data-folk="${p.id}"><span class="sw" style="background:${p.color}"></span>${esc(p.name)}<small>${p.sea ? 'море' : p.under ? 'подземье' : 'свои земли'}</small></div>`); }
+  const cityOnly = Object.keys(FMG.RACES).filter(k => k !== 'human' && !seen.has(k) && m.burgs.some(b => b.races && b.races.some(([x]) => x === k)));
+  for (const k of cityOnly) rows.push(`<div class="item" data-race="${k}"><span class="sw" style="background:#cdbb95"></span>${esc(raceName(k))}<small>в городах</small></div>`);
+  $('#folkList').innerHTML = rows.join('');
 }
 function showBurg(id, fly) {
   const m = S.map, b = m.burgs[id]; S.selBurg = b; S.selState = null;
@@ -286,12 +345,13 @@ function showBurg(id, fly) {
     <input id="edName" value="${esc(b.name)}" maxlength="30" title="Переименовать">
     <table>
       <tr><td>Государство</td><td>${st ? `<a href="#" data-state="${st.id}">${esc(st.fullName)}</a>` : '—'}</td></tr>
-      <tr><td>Народ</td><td>${cu ? esc(cu.name) : '—'}</td></tr>
+      <tr><td>Культура</td><td>${cu ? esc(cu.name) : '—'}</td></tr>
       <tr><td>Население</td><td>${fmt(b.pop * 1000)}</td></tr>
       <tr><td>Местность</td><td>${FMG.BIOMES[m.biome[b.cell]].name}, ${fmt(b.elev)} м</td></tr>
       <tr><td>Климат</td><td>${Math.round(m.temp[b.cell])}°C в среднем</td></tr>
     </table>
     <div>${feats.map(f => `<span class="tag">${f}</span>`).join('')}</div>
+    <h3>Кто живёт</h3><div class="races">${raceBar(b.races, 8)}</div>
     <h3>Ближайшие поселения</h3><div class="list">${nearest.map(([o, d]) => `<div class="item" data-burg="${o.id}">${esc(o.name)}<small>${fmt(d)} км · ${(d / 30).toFixed(1)} дн.</small></div>`).join('')}</div>`;
   openInfo();
   $('#edName').addEventListener('change', e => { const v = e.target.value.trim(); if (!v) return; b.name = v; S.edits.burgs[id] = v; refreshLabels(); });
@@ -302,9 +362,12 @@ function openInfo() {
   el.querySelector('.close').onclick = closeInfo;
 }
 document.addEventListener('click', e => {
-  const t = e.target.closest('[data-burg],[data-state]'); if (!t || !S.map) return;
+  const t = e.target.closest('[data-burg],[data-state],[data-folk],[data-race]'); if (!t || !S.map) return;
   e.preventDefault();
-  if (t.dataset.burg != null) showBurg(+t.dataset.burg, true); else showState(+t.dataset.state, true);
+  if (t.dataset.burg != null) showBurg(+t.dataset.burg, true);
+  else if (t.dataset.state != null) showState(+t.dataset.state, true);
+  else if (t.dataset.folk != null) showFolk(+t.dataset.folk, true);
+  else showRace(t.dataset.race);
 });
 function renderStatesList() {
   const m = S.map;

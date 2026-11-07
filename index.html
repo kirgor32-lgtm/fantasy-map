@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,600&family=Cormorant+SC:wght@600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=6">
+<link rel="stylesheet" href="css/style.css?v=7">
 </head>
 <body>
 <canvas id="map"></canvas>
@@ -84,6 +84,8 @@
       <label><input type="checkbox" data-l="roads" checked> Дороги</label>
       <label><input type="checkbox" data-l="burgs" checked> Города</label>
       <label><input type="checkbox" data-l="labels" checked> Подписи</label>
+      <label><input type="checkbox" data-l="folk" checked> Земли народов</label>
+      <label><input type="checkbox" data-l="legend" checked> Легенда</label>
       <label><input type="checkbox" data-l="waves" checked> Прибой</label>
       <label><input type="checkbox" data-l="hex"> Гексы</label>
     </div>
@@ -97,6 +99,12 @@
     <input id="inSearch" class="search" type="search" placeholder="Найти город или страну…">
     <div id="searchRes" class="list"></div>
     <div id="statesList" class="list"></div>
+  </details>
+
+  <details open>
+    <summary>Народы и расы</summary>
+    <div class="hint2">Расы из редактора персонажей живут в подходящих по лору местах внутри государств</div>
+    <div id="folkList" class="list"></div>
   </details>
 
   <details>
@@ -134,8 +142,8 @@
 <input type="file" id="fileIn" accept=".json,application/json" hidden>
 
 <script src="js/vendor/delaunator.min.js"></script>
-<script src="js/gen.js?v=6"></script>
-<script src="js/render.js?v=6"></script>
-<script src="js/app.js?v=6"></script>
+<script src="js/gen.js?v=7"></script>
+<script src="js/render.js?v=7"></script>
+<script src="js/app.js?v=7"></script>
 </body>
 </html>

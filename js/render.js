@@ -167,6 +167,20 @@ function prepare(m) {
     }
   }
   P.icons = I;
+  // race habitat areas
+  P.folk = [];
+  if (m.peoples) for (const pp of m.peoples) {
+    if (pp.absent) continue; const path = new Path2D(); const id = pp.id, fk = m.folk;
+    for (const l of FMG.loops(m, c => fk[c] === id)) smoothClosed(path, l);
+    P.folk.push({ pp, path });
+  }
+  // horizontal room for each state label (map units)
+  for (const s of m.states) {
+    const sid = s.id; let l = 0, r = 0; const st = spacing * 0.5;
+    while (l < W && (() => { const c = FMG.cellAt(m, s.lx - l - st, s.ly); return type[c] === 0 && state[c] === sid; })()) l += st;
+    while (r < W && (() => { const c = FMG.cellAt(m, s.lx + r + st, s.ly); return type[c] === 0 && state[c] === sid; })()) r += st;
+    s.lw = Math.max(spacing * 2, Math.min(l, r) * 2 + spacing);
+  }
   P.hex = null; P.hexKm = 0; P.sel = null; P.selId = -1;
   P.time = performance.now() - t0;
   m._p = P;
@@ -254,6 +268,15 @@ function render(ctx, m, V, O) {
     ctx.strokeStyle = 'rgba(105,30,75,0.9)'; ctx.lineWidth = 1.6 * u; ctx.stroke(P.borders);
     ctx.setLineDash([]);
   }
+  // race habitats
+  if (L.folk && P.folk.length) {
+    for (const { pp, path } of P.folk) {
+      ctx.globalAlpha = pp.under ? 0.1 : 0.14; ctx.fillStyle = pp.color; ctx.fill(path); ctx.globalAlpha = 1;
+      ctx.setLineDash(pp.under ? [5 * u, 2 * u, 1 * u, 2 * u] : [1.6 * u, 2.6 * u]);
+      ctx.strokeStyle = pp.color; ctx.lineWidth = 1.5 * u; ctx.stroke(path);
+    }
+    ctx.setLineDash([]);
+  }
   // roads
   if (L.roads) {
     ctx.strokeStyle = 'rgba(250,240,215,0.7)'; ctx.lineWidth = 3.2 * u; ctx.stroke(P.roads[1]);
@@ -274,65 +297,111 @@ function render(ctx, m, V, O) {
   const boxes = []; const hit = b => { for (const o of boxes) if (b.x < o.x + o.w && b.x + b.w > o.x && b.y < o.y + o.h && b.y + b.h > o.y) return true; return false; };
   const onScreen = (x, y, pad) => x > -pad && y > -pad && x < V.w + pad && y < V.h + pad;
   ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
-  const halo = (txt, x, y, col, hw) => { ctx.strokeStyle = 'rgba(244,236,214,0.88)'; ctx.lineWidth = hw || 3; ctx.strokeText(txt, x, y); ctx.fillStyle = col; ctx.fillText(txt, x, y); };
-  const hasLS = 'letterSpacing' in ctx;
+  const halo = (txt, x, y, col, hw) => { ctx.strokeStyle = 'rgba(244,236,214,0.9)'; ctx.lineWidth = hw || 3; ctx.strokeText(txt, x, y); ctx.fillStyle = col; ctx.fillText(txt, x, y); };
+  const hasLS = 'letterSpacing' in ctx; const LS = v => { if (hasLS) ctx.letterSpacing = v.toFixed(1) + 'px'; };
+  const z = V.scale / V.fit;
+  const tier = b => b.capital ? 0 : b.pop >= 10 ? 1 : b.pop >= 3 ? 2 : 3; // столица, город, городок, деревня
+  const R_ = [6.5, 4.2, 3, 1.9];
+  const FS = [15, 13.5, 12, 10.5];
+  const FONT = ['700 {s}px "Cormorant SC", Georgia, serif', '700 {s}px "Cormorant Garamond", Georgia, serif', '600 {s}px "Cormorant Garamond", Georgia, serif', 'italic 500 {s}px "Cormorant Garamond", Georgia, serif'];
+  const COL = ['#7a1414', '#22160c', '#33241a', '#4a3a2c'];
+  const font = (t, s) => FONT[t].replace('{s}', s.toFixed(1));
+  const iconVis = t => t <= 1 || (t === 2 && z >= 0.85) || (t === 3 && z >= 1.3);
+  const labelVis = t => t <= 1 || (t === 2 && z >= 1.25) || (t === 3 && z >= 2);
+  const star = (x, y, r) => { ctx.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * 0.45 : r; ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } ctx.closePath(); };
+  // 1. settlement icons (reserve space)
+  const vis = [];
+  if (L.burgs) {
+    for (const b of (O.sortedBurgs || m.burgs)) {
+      const t = tier(b); if (!iconVis(t)) continue;
+      const x = sx(b.x), y = sy(b.y); if (!onScreen(x, y, 60)) continue;
+      const r = R_[t]; const box = { x: x - r - 1, y: y - r - 1, w: 2 * r + 2, h: 2 * r + 2 };
+      if (t >= 2 && hit(box)) continue;
+      vis.push([b, x, y, r, t]); boxes.push(box);
+    }
+    for (const [b, x, y, r, t] of vis) {
+      if (t === 0) {
+        ctx.beginPath(); ctx.arc(x, y, r + 2.2, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,248,230,0.95)'; ctx.fill(); ctx.strokeStyle = '#2e2218'; ctx.lineWidth = 1.2; ctx.stroke();
+        star(x, y, r); ctx.fillStyle = '#a31b1b'; ctx.fill(); ctx.strokeStyle = '#4a0e0e'; ctx.lineWidth = 0.8; ctx.stroke();
+      } else if (t === 1) {
+        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fillStyle = '#fff8e8'; ctx.fill(); ctx.strokeStyle = '#2a1d12'; ctx.lineWidth = 1.6; ctx.stroke();
+        ctx.beginPath(); ctx.arc(x, y, 1.7, 0, Math.PI * 2); ctx.fillStyle = '#2a1d12'; ctx.fill();
+      } else if (t === 2) {
+        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fillStyle = '#fff8e8'; ctx.fill(); ctx.strokeStyle = '#2a1d12'; ctx.lineWidth = 1.2; ctx.stroke();
+      } else {
+        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fillStyle = '#3a2a1c'; ctx.fill(); ctx.strokeStyle = 'rgba(255,248,232,0.85)'; ctx.lineWidth = 0.8; ctx.stroke();
+      }
+      if (b.port && z >= 2.2 && t > 0) { ctx.fillStyle = '#2f5f80'; ctx.fillRect(x + r - 0.5, y + r - 0.5, 2.6, 2.6); }
+    }
+  }
+  const placeBurgLabel = (b, x, y, r, t, force) => {
+    const fs = FS[t] * zf; ctx.font = font(t, fs); LS(t === 0 ? 0.6 : 0);
+    const tw = ctx.measureText(b.name).width, th = fs * 0.95;
+    const cand = [[x + r + 4, y, 'left'], [x - r - 4, y, 'right'], [x, y - r - th * 0.7, 'center'], [x, y + r + th * 0.7, 'center'], [x + r + 3, y - th * 0.55, 'left'], [x + r + 3, y + th * 0.55, 'left']];
+    for (let i = 0; i < cand.length; i++) {
+      const [lx, ly, al] = cand[i]; const bx = al === 'left' ? lx : al === 'right' ? lx - tw : lx - tw / 2;
+      const box = { x: bx - 2, y: ly - th / 2, w: tw + 4, h: th };
+      if (hit(box) && !(force && i === cand.length - 1)) continue;
+      boxes.push(box); ctx.textAlign = al; halo(b.name, lx, ly, COL[t], t === 0 ? 3.6 : 3); LS(0); return true;
+    }
+    LS(0); return false;
+  };
+  // 2. capitals and cities labels (highest priority)
+  if (L.burgs && L.labels) for (const v of vis) if (v[4] <= 1) placeBurgLabel(v[0], v[1], v[2], v[3], v[4], v[4] === 0);
+  // 3. state names: fitted into the state's width, shrunk or dropped instead of overlapping
   if (L.labels) {
     ctx.textAlign = 'center';
+    const order = m.states.slice().sort((a, b) => b.cells - a.cells);
+    for (const s of order) {
+      const x = sx(s.lx), y = sy(s.ly); if (!onScreen(x, y, 300)) continue;
+      let size = clamp(Math.sqrt(s.cells) * spacing * V.scale * 0.1, 10, 44);
+      const room = s.lw * V.scale * 0.92; const nm = s.name.toUpperCase(), fm = s.form.toUpperCase();
+      ctx.font = `700 ${size.toFixed(1)}px "Cormorant SC", Georgia, serif`; LS(size * 0.12);
+      let tw = ctx.measureText(nm).width; if (tw > room) { size = Math.max(9, size * room / tw); ctx.font = `700 ${size.toFixed(1)}px "Cormorant SC", Georgia, serif`; LS(size * 0.12); tw = ctx.measureText(nm).width; }
+      let placed = false;
+      for (const dy of [0, -size * 1.3, size * 1.3, -size * 2.4, size * 2.4]) {
+        for (const withForm of [true, false]) {
+          const fsz = size * 0.5; ctx.font = `600 ${fsz.toFixed(1)}px "Cormorant SC", Georgia, serif`; LS(fsz * 0.14);
+          const fw = withForm ? ctx.measureText(fm).width : 0;
+          const top = y + dy - (withForm ? size * 0.62 + fsz * 0.55 : size * 0.5) + size * 0.12;
+          const bw = Math.max(tw, fw); const box = { x: x - bw / 2 - 2, y: top, w: bw + 4, h: (y + dy + size * 0.12 + size * 0.5) - top };
+          if (hit(box)) continue;
+          boxes.push(box); ctx.globalAlpha = 0.86;
+          if (withForm) halo(fm, x, y + dy - size * 0.62, 'rgba(70,40,28,0.9)', 2.5);
+          ctx.font = `700 ${size.toFixed(1)}px "Cormorant SC", Georgia, serif`; LS(size * 0.12);
+          halo(nm, x, y + dy + size * 0.12, 'rgba(70,40,28,0.85)', 3);
+          ctx.globalAlpha = 1; placed = true; break;
+        }
+        if (placed) break;
+      }
+      LS(0);
+    }
+    // sea names
     const ss = clamp(15 * zf, 13, 22);
-    ctx.font = `italic 600 ${ss.toFixed(1)}px "Cormorant Garamond", Georgia, serif`;
-    if (hasLS) ctx.letterSpacing = (ss * 0.35).toFixed(1) + 'px';
+    ctx.font = `italic 600 ${ss.toFixed(1)}px "Cormorant Garamond", Georgia, serif`; LS(ss * 0.35);
     for (const s of m.seas || []) {
       const x = sx(s.x), y = sy(s.y); if (!onScreen(x, y, 200)) continue;
+      const tw = ctx.measureText(s.name).width; const box = { x: x - tw / 2, y: y - ss / 2, w: tw, h: ss }; if (hit(box)) continue; boxes.push(box);
       ctx.fillStyle = 'rgba(35,70,95,0.62)'; ctx.fillText(s.name, x, y);
     }
-    for (const s of m.states) {
-      const x = sx(s.lx), y = sy(s.ly); if (!onScreen(x, y, 300)) continue;
-      const size = clamp(Math.sqrt(s.cells) * spacing * V.scale * 0.1, 11, 46);
-      if (hasLS) ctx.letterSpacing = (size * 0.12).toFixed(1) + 'px';
-      ctx.font = `600 ${(size * 0.5).toFixed(1)}px "Cormorant SC", Georgia, serif`;
-      ctx.globalAlpha = 0.85; halo(s.form.toUpperCase(), x, y - size * 0.62, 'rgba(70,40,28,0.9)', 2.5);
-      ctx.font = `700 ${size.toFixed(1)}px "Cormorant SC", Georgia, serif`;
-      halo(s.name.toUpperCase(), x, y + size * 0.12, 'rgba(70,40,28,0.82)', 3);
-      ctx.globalAlpha = 1;
-    }
-    if (hasLS) ctx.letterSpacing = '0px';
+    LS(0);
   }
-  if (L.burgs) {
-    const list = O.sortedBurgs || m.burgs;
-    const showTowns = V.scale >= V.fit * 0.85;
-    // icons first (they also reserve space)
-    const vis = [];
-    for (const b of list) {
-      if (!b.capital && !showTowns) continue;
-      const x = sx(b.x), y = sy(b.y); if (!onScreen(x, y, 40)) continue;
-      const r = b.capital ? 4.6 : b.pop >= 10 ? 3.3 : b.pop >= 3 ? 2.6 : 2;
-      if (!b.capital && V.scale < V.fit * 1.6 && b.pop < 3 && hit({ x: x - r, y: y - r, w: 2 * r, h: 2 * r })) continue;
-      vis.push([b, x, y, r]); boxes.push({ x: x - r, y: y - r, w: 2 * r, h: 2 * r });
-    }
-    for (const [b, x, y, r] of vis) {
-      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.fillStyle = b.capital ? '#fff7e2' : '#fbf4e4'; ctx.fill();
-      ctx.strokeStyle = '#2e2218'; ctx.lineWidth = b.capital ? 1.6 : 1.1; ctx.stroke();
-      if (b.capital) { ctx.beginPath(); ctx.arc(x, y, 2, 0, Math.PI * 2); ctx.fillStyle = '#8b1e1e'; ctx.fill(); }
-      if (b.port && V.scale >= V.fit * 2.2) { ctx.fillStyle = '#2f5f80'; ctx.fillRect(x + r - 0.5, y + r - 0.5, 2.5, 2.5); }
-    }
-    if (L.labels) {
-      for (const [b, x, y, r] of vis) {
-        const fs = (b.capital ? 14 : b.pop >= 10 ? 12.5 : b.pop >= 3 ? 11.5 : 10.5) * zf;
-        if (!b.capital && V.scale < V.fit * 1.25 && b.pop < 10) continue;
-        ctx.font = `${b.capital ? 700 : b.pop >= 10 ? 600 : 500} ${fs.toFixed(1)}px "Cormorant Garamond", Georgia, serif`;
-        const tw = ctx.measureText(b.name).width, th = fs * 0.9;
-        const cand = [[x + r + 3, y, 'left'], [x - r - 3, y, 'right'], [x, y - r - th * 0.75, 'center'], [x, y + r + th * 0.75, 'center']];
-        for (const [lx, ly, al] of cand) {
-          const bx = al === 'left' ? lx : al === 'right' ? lx - tw : lx - tw / 2;
-          const box = { x: bx - 1, y: ly - th / 2, w: tw + 2, h: th };
-          if (!b.capital && hit(box)) continue;
-          boxes.push(box); ctx.textAlign = al; halo(b.name, lx, ly, b.capital ? '#2a1a10' : '#3a2a1c', 3); break;
-        }
-      }
+  // 4. race habitats
+  if (L.labels && L.folk && P.folk.length && z >= 0.95) {
+    const fs = clamp(11.5 * zf, 11, 16); ctx.textAlign = 'center';
+    for (const { pp } of P.folk) {
+      const x = sx(pp.lx), y = sy(pp.ly); if (!onScreen(x, y, 100)) continue;
+      ctx.font = `italic 700 ${fs.toFixed(1)}px "Cormorant Garamond", Georgia, serif`; LS(0.5);
+      const txt = pp.under ? pp.name + ' (Подземье)' : pp.name; const tw = ctx.measureText(txt).width;
+      let ok = false;
+      for (const dy of [0, -fs * 1.2, fs * 1.2, -fs * 2.4, fs * 2.4]) { const box = { x: x - tw / 2 - 2, y: y + dy - fs * 0.55, w: tw + 4, h: fs * 1.1 }; if (hit(box)) continue; boxes.push(box); halo(txt, x, y + dy, pp.color, 3); ok = true; break; }
+      void ok; LS(0);
     }
   }
-  if (L.labels && L.rivers && V.scale >= V.fit * 1.35) {
+  // 5. towns & villages labels
+  if (L.burgs && L.labels) for (const v of vis) if (v[4] >= 2 && labelVis(v[4])) placeBurgLabel(v[0], v[1], v[2], v[3], v[4], false);
+  // 6. rivers
+  if (L.labels && L.rivers && z >= 1.35) {
     const fs = 11.5 * zf; ctx.font = `italic 600 ${fs.toFixed(1)}px "Cormorant Garamond", Georgia, serif`; ctx.textAlign = 'center';
     for (const r of m.rivers) {
       if (!r.name) continue; const p = r.pts; const i = Math.max(2, Math.floor(p.length / 4) * 2);
@@ -412,6 +481,26 @@ function decor(ctx, m, V, O) {
   ctx.font = '700 13px "Cormorant SC", Georgia, serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#2a1d12';
   ctx.fillText('С', 0, -R - 9);
   ctx.setTransform(V.dpr, 0, 0, V.dpr, 0, 0);
+  // legend
+  if (O.layers && O.layers.legend) {
+    const rows = [['cap', 'Столица'], ['city', 'Город'], ['town', 'Городок'], ['vil', 'Деревня'], ['road', 'Тракт / дорога'], ['border', 'Граница'], ['folk', 'Земли народа']];
+    const lx = (O.scaleX || 20) - 10, lh = 17, bw = 132, bh = rows.length * lh + 30, ly = V.h - 58 - bh;
+    ctx.fillStyle = 'rgba(244,236,214,0.88)'; ctx.fillRect(lx, ly, bw, bh); ctx.strokeStyle = '#3d2f22'; ctx.lineWidth = 1; ctx.strokeRect(lx, ly, bw, bh);
+    ctx.font = '700 13px "Cormorant SC", Georgia, serif'; ctx.fillStyle = '#2a1d12'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText('Обозначения', lx + 10, ly + 13);
+    ctx.font = '600 13px "Cormorant Garamond", Georgia, serif';
+    rows.forEach(([k, t], i) => {
+      const y = ly + 32 + i * lh, x = lx + 20;
+      ctx.lineWidth = 1.2; ctx.setLineDash([]);
+      if (k === 'cap') { ctx.beginPath(); ctx.arc(x, y, 7, 0, Math.PI * 2); ctx.fillStyle = '#fff8e6'; ctx.fill(); ctx.strokeStyle = '#2e2218'; ctx.stroke(); ctx.beginPath(); for (let j = 0; j < 10; j++) { const a = -Math.PI / 2 + j * Math.PI / 5, rr = j % 2 ? 2.3 : 5.2; ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } ctx.closePath(); ctx.fillStyle = '#a31b1b'; ctx.fill(); }
+      else if (k === 'city') { ctx.beginPath(); ctx.arc(x, y, 4.2, 0, Math.PI * 2); ctx.fillStyle = '#fff8e8'; ctx.fill(); ctx.strokeStyle = '#2a1d12'; ctx.lineWidth = 1.6; ctx.stroke(); ctx.beginPath(); ctx.arc(x, y, 1.7, 0, Math.PI * 2); ctx.fillStyle = '#2a1d12'; ctx.fill(); }
+      else if (k === 'town') { ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fillStyle = '#fff8e8'; ctx.fill(); ctx.strokeStyle = '#2a1d12'; ctx.stroke(); }
+      else if (k === 'vil') { ctx.beginPath(); ctx.arc(x, y, 1.9, 0, Math.PI * 2); ctx.fillStyle = '#3a2a1c'; ctx.fill(); }
+      else if (k === 'road') { ctx.strokeStyle = '#7b4a22'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(x - 9, y - 2); ctx.lineTo(x + 9, y - 2); ctx.stroke(); ctx.lineWidth = 1.1; ctx.setLineDash([4, 2]); ctx.beginPath(); ctx.moveTo(x - 9, y + 3); ctx.lineTo(x + 9, y + 3); ctx.stroke(); }
+      else if (k === 'border') { ctx.strokeStyle = 'rgba(105,30,75,0.9)'; ctx.lineWidth = 1.6; ctx.setLineDash([8, 3, 1.5, 3]); ctx.beginPath(); ctx.moveTo(x - 10, y); ctx.lineTo(x + 10, y); ctx.stroke(); }
+      else if (k === 'folk') { ctx.fillStyle = 'rgba(47,107,50,0.18)'; ctx.fillRect(x - 9, y - 5, 18, 10); ctx.strokeStyle = '#2f6b32'; ctx.lineWidth = 1.4; ctx.setLineDash([1.6, 2.6]); ctx.strokeRect(x - 9, y - 5, 18, 10); }
+      ctx.setLineDash([]); ctx.fillStyle = '#2a1d12'; ctx.fillText(t, lx + 38, y + 1);
+    });
+  }
   // title cartouche
   if (O.title) {
     const t = O.title; ctx.font = '700 30px "Cormorant SC", Georgia, serif'; if ('letterSpacing' in ctx) ctx.letterSpacing = '4px';
