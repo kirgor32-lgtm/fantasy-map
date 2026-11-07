@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Картограф — генератор фэнтези-континента для D&amp;D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,600&family=Cormorant+SC:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=1">
+</head>
+<body>
+<canvas id="map"></canvas>
+
+<div id="loading" class="loading"><div class="spin"></div><span>Рисую континент…</span></div>
+
+<button id="panelToggle" class="fab" title="Меню">☰</button>
+<aside id="panel" class="panel">
+  <header class="ph">
+    <div class="logo">⚔ Картограф</div>
+    <div class="sub">генератор континента для D&amp;D</div>
+  </header>
+
+  <section>
+    <div class="row gap">
+      <button id="btnNew" class="btn primary grow">🎲 Новый континент</button>
+    </div>
+    <label class="fld">Название континента<input id="inName" type="text" maxlength="40"></label>
+  </section>
+
+  <details open>
+    <summary>Параметры</summary>
+    <label class="fld">Зерно (seed)
+      <div class="row"><input id="inSeed" type="text" maxlength="40"><button id="btnSeed" class="btn sq" title="Случайное">↻</button></div>
+    </label>
+    <label class="fld">Форма
+      <select id="inShape">
+        <option value="classic">Классический материк</option>
+        <option value="crescent">С большим заливом</option>
+        <option value="twin">Два края с перешейком</option>
+        <option value="long">Вытянутый</option>
+      </select>
+    </label>
+    <label class="fld">Детализация
+      <select id="inCells">
+        <option value="5000">Низкая (5 000 клеток)</option>
+        <option value="12000" selected>Средняя (12 000)</option>
+        <option value="24000">Высокая (24 000)</option>
+        <option value="45000">Ультра (45 000)</option>
+      </select>
+    </label>
+    <label class="fld">Климат
+      <select id="inClimate">
+        <option value="temperate">Север холодный, юг жаркий</option>
+        <option value="cold">Холодный (север)</option>
+        <option value="hot">Жаркий (юг)</option>
+      </select>
+    </label>
+    <label class="fld">Размер континента
+      <select id="inKm">
+        <option value="1200">Малый (~1 200 км)</option>
+        <option value="2400" selected>Средний (~2 400 км)</option>
+        <option value="4000">Большой (~4 000 км)</option>
+      </select>
+    </label>
+    <label class="fld">Суша: <b id="vLand"></b><input id="inLand" type="range" min="0.25" max="0.6" step="0.01"></label>
+    <label class="fld">Изрезанность берегов: <b id="vRough"></b><input id="inRough" type="range" min="0" max="1" step="0.05"></label>
+    <label class="fld">Государств: <b id="vStates"></b><input id="inStates" type="range" min="3" max="16" step="1"></label>
+    <label class="fld">Городов: <b id="vTowns"></b><input id="inTowns" type="range" min="10" max="200" step="5"></label>
+    <label class="fld">Реки
+      <select id="inRivers"><option value="0.04">Мало</option><option value="0.07" selected>Средне</option><option value="0.11">Много</option></select>
+    </label>
+    <button id="btnRegen" class="btn grow">Пересоздать с этими настройками</button>
+  </details>
+
+  <details open>
+    <summary>Слои</summary>
+    <div class="layers" id="layers">
+      <label><input type="checkbox" data-l="biomes" checked> Природные зоны</label>
+      <label><input type="checkbox" data-l="relief" checked> Горы и леса</label>
+      <label><input type="checkbox" data-l="states" checked> Заливка стран</label>
+      <label><input type="checkbox" data-l="borders" checked> Границы</label>
+      <label><input type="checkbox" data-l="rivers" checked> Реки</label>
+      <label><input type="checkbox" data-l="roads" checked> Дороги</label>
+      <label><input type="checkbox" data-l="burgs" checked> Города</label>
+      <label><input type="checkbox" data-l="labels" checked> Подписи</label>
+      <label><input type="checkbox" data-l="waves" checked> Прибой</label>
+      <label><input type="checkbox" data-l="hex"> Гексы</label>
+    </div>
+    <label class="fld" id="hexRow">Размер гекса
+      <select id="inHex"><option value="20">20 км (≈1 день пути)</option><option value="40" selected>40 км</option><option value="60">60 км</option><option value="100">100 км</option></select>
+    </label>
+  </details>
+
+  <details open>
+    <summary>Государства</summary>
+    <input id="inSearch" class="search" type="search" placeholder="Найти город или страну…">
+    <div id="searchRes" class="list"></div>
+    <div id="statesList" class="list"></div>
+  </details>
+
+  <details>
+    <summary>Файл</summary>
+    <div class="col">
+      <button id="btnPng" class="btn">🖼 Скачать PNG (высокое разрешение)</button>
+      <button id="btnSave" class="btn">💾 Сохранить карту (.json)</button>
+      <button id="btnLoad" class="btn">📂 Открыть карту</button>
+      <button id="btnLink" class="btn">🔗 Скопировать ссылку</button>
+    </div>
+  </details>
+
+  <details>
+    <summary>Подсказки</summary>
+    <ul class="help">
+      <li>Колёсико / щипок — масштаб, перетаскивание — сдвиг</li>
+      <li>Клик по стране или городу — подробности и переименование</li>
+      <li>📏 Линейка — расстояния и дни пути (пешком ~30 км/день, верхом ~50)</li>
+      <li>Одинаковое зерно = одинаковая карта, переименования сохраняются в файле</li>
+    </ul>
+  </details>
+</aside>
+
+<div id="tools" class="tools">
+  <button class="btn sq" id="zIn" title="Приблизить">+</button>
+  <button class="btn sq" id="zOut" title="Отдалить">−</button>
+  <button class="btn sq" id="zFit" title="Вся карта">⤢</button>
+  <button class="btn sq" id="btnRuler" title="Линейка">📏</button>
+</div>
+<div id="rulerBox" class="ruler" hidden></div>
+
+<aside id="info" class="info" hidden></aside>
+<div id="tip" class="tip" hidden></div>
+<div id="stats" class="stats"></div>
+<input type="file" id="fileIn" accept=".json,application/json" hidden>
+
+<script src="js/vendor/delaunator.min.js"></script>
+<script src="js/gen.js?v=1"></script>
+<script src="js/render.js?v=1"></script>
+<script src="js/app.js?v=1"></script>
+</body>
+</html>
