@@ -240,9 +240,12 @@ function render(ctx, m, V, O) {
     const u0 = 1 / V.scale;
     ctx.fillStyle = 'rgba(250,253,255,0.72)'; ctx.fill(P.ice);
     ctx.strokeStyle = 'rgba(120,160,190,0.75)'; ctx.lineWidth = 1.1 * u0; ctx.stroke(P.ice);
-    ctx.fillStyle = 'rgba(236,202,120,0.5)'; ctx.fill(P.sand);
+    ctx.fillStyle = 'rgba(242,208,128,0.78)'; ctx.fill(P.sand);
+    ctx.strokeStyle = 'rgba(176,124,48,0.7)'; ctx.lineWidth = 1 * u0; ctx.stroke(P.sand);
     ctx.save(); ctx.clip(P.sand);
-    if (!P.sandPat) { const pc = mkCanvas(14, 14), g = pc.getContext('2d'); g.fillStyle = 'rgba(150,105,40,0.55)'; for (const [a, b] of [[2, 3], [9, 1], [6, 8], [12, 11], [3, 12]]) { g.beginPath(); g.arc(a, b, 0.9, 0, 7); g.fill(); } P.sandPat = ctx.createPattern(pc, 'repeat'); }
+    if (!P.sandPat) { const pc = mkCanvas(28, 22), g = pc.getContext('2d'); g.strokeStyle = 'rgba(160,108,40,0.7)'; g.lineWidth = 1.1;
+      for (const [a, b] of [[4, 6], [18, 15]]) { g.beginPath(); g.moveTo(a, b + 2); g.quadraticCurveTo(a + 4, b - 3, a + 9, b + 2); g.stroke(); }
+      g.fillStyle = 'rgba(150,100,40,0.6)'; for (const [a, b] of [[20, 4], [8, 17], [25, 20]]) { g.beginPath(); g.arc(a, b, 0.8, 0, 7); g.fill(); } P.sandPat = ctx.createPattern(pc, 'repeat'); }
     ctx.fillStyle = P.sandPat; ctx.fill(P.sand); ctx.restore();
     if (!P.icePat) { const pc = mkCanvas(16, 16), g = pc.getContext('2d'); g.strokeStyle = 'rgba(110,150,185,0.45)'; g.lineWidth = 1; g.beginPath(); g.moveTo(0, 16); g.lineTo(16, 0); g.stroke(); P.icePat = ctx.createPattern(pc, 'repeat'); }
     ctx.save(); ctx.clip(P.ice); ctx.fillStyle = P.icePat; ctx.fill(P.ice); ctx.restore();
