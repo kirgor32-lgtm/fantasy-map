@@ -179,7 +179,7 @@ function flyTo(x, y, scale) {
 // ---------- pointer interaction ----------
 const pointers = new Map(); let dragMoved = 0, pinch = null, last = null;
 canvas.addEventListener('pointerdown', e => {
-  canvas.setPointerCapture(e.pointerId); pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* synthetic pointer */ } pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   dragMoved = 0; last = { x: e.clientX, y: e.clientY };
   if (pointers.size === 2) { const [a, b] = [...pointers.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2 }; }
   if (!S.rulerOn) canvas.classList.add('drag');
