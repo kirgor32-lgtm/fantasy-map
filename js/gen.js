@@ -503,7 +503,7 @@ function generate(P) {
   // (deserts, tundra and high mountains are allowed to stay sparser; glaciers stay empty)
   {
     const cellKm = spacing * kmPerUnit;
-    const gapKm = clamp(75 * Math.sqrt(60 / Math.max(10, nTowns)), 35, 140);
+    const gapKm = clamp(62 * Math.sqrt(60 / Math.max(10, nTowns)), 30, 120);
     const loose = c => { const b = biome[c]; return (b === 1 || b === 2 || b === 10 || b === 13) ? 1.8 : h[c] > 0.6 ? 1.5 : (b === 9 || b === 7 || b === 12) ? 1.25 : 1; };
     const dist = new Float32Array(n).fill(Infinity);
     const spread = src => { // BFS over land/lake from src, updating nearest-settlement distance (in km)

@@ -319,7 +319,7 @@ function render(ctx, m, V, O) {
   const hasLS = 'letterSpacing' in ctx; const LS = v => { if (hasLS) ctx.letterSpacing = v.toFixed(1) + 'px'; };
   const z = V.scale / V.fit;
   const tier = b => b.capital ? 0 : b.pop >= 10 ? 1 : b.pop >= 3 ? 2 : 3; // столица, город, городок, деревня
-  const R_ = [7, 5, 3.2, 1.8];
+  const R_ = [7, 5, 3.2, 2.3];
   const FS = [15, 13.5, 12, 10.5];
   const FONT = ['700 {s}px "Cormorant SC", Georgia, serif', '700 {s}px "Cormorant Garamond", Georgia, serif', '600 {s}px "Cormorant Garamond", Georgia, serif', 'italic 500 {s}px "Cormorant Garamond", Georgia, serif'];
   const COL = ['#7a1414', '#22160c', '#33241a', '#4a3a2c'];
@@ -348,7 +348,7 @@ function render(ctx, m, V, O) {
       } else if (t === 2) {
         ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fillStyle = '#fff8e8'; ctx.fill(); ctx.strokeStyle = '#2a1d12'; ctx.lineWidth = 1.2; ctx.stroke();
       } else {
-        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fillStyle = '#3a2a1c'; ctx.fill(); ctx.strokeStyle = 'rgba(255,248,232,0.85)'; ctx.lineWidth = 0.8; ctx.stroke();
+        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fillStyle = '#3a2a1c'; ctx.fill(); ctx.strokeStyle = 'rgba(255,248,232,0.95)'; ctx.lineWidth = 1.1; ctx.stroke();
       }
       if (b.port && z >= 2.2 && t > 0) { ctx.fillStyle = '#2f5f80'; ctx.fillRect(x + r - 0.5, y + r - 0.5, 2.6, 2.6); }
     }
