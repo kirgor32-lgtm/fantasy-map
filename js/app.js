@@ -106,7 +106,17 @@ function readParams() {
 function writeParams(p) {
   $('#inSeed').value = p.seed; $('#inShape').value = p.shape; $('#inCells').value = String(p.cells); $('#inClimate').value = p.climate;
   $('#inKm').value = String(p.km); $('#inLand').value = p.land; $('#inRough').value = p.rough; $('#inStates').value = p.states; $('#inTowns').value = p.towns;
-  $('#inRivers').value = String(p.rivers); syncLabels();
+  $('#inRivers').value = String(p.rivers); syncLabels(); markDirty();
+}
+function paramsEqual(a, b) {
+  if (!a || !b) return false;
+  return ['seed', 'shape', 'cells', 'climate', 'km', 'land', 'rough', 'states', 'towns', 'rivers'].every(k => String(a[k]) === String(b[k]));
+}
+function markDirty() {
+  const dirty = !!S.params && !paramsEqual(readParams(), S.params);
+  const btn = $('#btnRegen');
+  btn.classList.toggle('pending', dirty);
+  btn.textContent = dirty ? '⚠ Пересоздать — настройки изменены' : 'Пересоздать с этими настройками';
 }
 function syncLabels() {
   $('#vLand').textContent = Math.round($('#inLand').value * 100) + '%';
@@ -420,7 +430,8 @@ $('#btnLink').onclick = async () => { try { await navigator.clipboard.writeText(
 // ---------- controls ----------
 $('#btnNew').onclick = () => { $('#inSeed').value = randSeed(); makeMap(readParams()); };
 $('#btnRegen').onclick = () => makeMap(readParams());
-$('#btnSeed').onclick = () => { $('#inSeed').value = randSeed(); };
+$('#btnSeed').onclick = () => { $('#inSeed').value = randSeed(); markDirty(); };
+document.querySelectorAll('#detParams input, #detParams select').forEach(el => { el.addEventListener('input', markDirty); el.addEventListener('change', markDirty); });
 ['#inLand', '#inRough', '#inStates', '#inTowns'].forEach(s => $(s).addEventListener('input', syncLabels));
 $('#inName').addEventListener('change', e => { const v = e.target.value.trim(); if (!v || !S.map) return; S.map.name = v; S.edits.name = v; persist(); requestDraw(); });
 document.querySelectorAll('#layers input').forEach(cb => cb.addEventListener('change', () => {
