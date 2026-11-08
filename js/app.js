@@ -128,7 +128,7 @@ async function makeMap(params, edits) {
   const tGen = performance.now() - t0;
   S.edits = edits || { states: {}, burgs: {}, name: null };
   applyEdits(m, S.edits);
-  if (document.fonts && document.fonts.load) { try { await Promise.race([Promise.all([document.fonts.load('700 20px "Cormorant SC"'), document.fonts.load('600 14px "Cormorant Garamond"'), document.fonts.load('italic 600 14px "Cormorant Garamond"')]), new Promise(r => setTimeout(r, 1500))]); } catch (e) { /* offline */ } }
+  if (document.fonts && document.fonts.load) { try { await Promise.race([Promise.all([document.fonts.load('700 20px "Cinzel"'), document.fonts.load('600 14px "EB Garamond"'), document.fonts.load('italic 600 14px "EB Garamond"')]), new Promise(r => setTimeout(r, 1500))]); } catch (e) { /* offline */ } }
   FMGR.prepare(m);
   S.map = m; S.params = m.params; S.selState = null; S.selBurg = null; S.ruler = null; crisp = null;
   sortedBurgs = m.burgs.slice().sort((a, b) => (b.capital - a.capital) || (b.pop - a.pop));

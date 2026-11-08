@@ -1,7 +1,7 @@
 /* Canvas renderer: pre-builds layers (bitmaps + Path2D) once per map, then every frame is ~40 draw calls. */
 (function () {
 'use strict';
-const SEA_BG = '#5f93ab';
+const SEA_BG = '#3f6a81';
 const hexRgb = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
 const mix = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
 const css = c => `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`;
@@ -34,7 +34,7 @@ let paperPattern = null; const PATS = new WeakMap();
 function paper(ctx) {
   if (!paperPattern) {
     const c = mkCanvas(256, 256), g = c.getContext('2d'); const img = g.createImageData(256, 256);
-    for (let i = 0; i < img.data.length; i += 4) { const v = 200 + Math.random() * 55; img.data[i] = v; img.data[i + 1] = v * 0.97; img.data[i + 2] = v * 0.9; img.data[i + 3] = 255; }
+    for (let i = 0; i < img.data.length; i += 4) { const v = 185 + Math.random() * 55; img.data[i] = v * 0.97; img.data[i + 1] = v; img.data[i + 2] = v * 1.03; img.data[i + 3] = 255; }
     g.putImageData(img, 0, 0); paperPattern = c;
   }
   return ctx.createPattern(paperPattern, 'repeat');
@@ -45,18 +45,18 @@ function prepare(m) {
   const t0 = performance.now();
   const { n, W, H, type, biome, h, shade, state, nOff, nbr, spacing } = m;
   const B = FMG.BIOMES.map(b => hexRgb(b.color));
-  const parchment = hexRgb('#eadfc3'), dark = hexRgb('#3b2f22'), white = [255, 252, 244], high = hexRgb('#d8ccb4');
+  const parchment = hexRgb('#c9cdbf'), dark = hexRgb('#232a2e'), white = [244, 248, 249], high = hexRgb('#c3c6bd');
   const landC = new Array(n), plainC = new Array(n), seaC = new Array(n);
-  const shallow = hexRgb('#9bc8d6'), deep = hexRgb('#2f6a88');
+  const shallow = hexRgb('#7fb2c4'), deep = hexRgb('#1f4d66');
   for (let c = 0; c < n; c++) {
     if (type[c] === 0) {
       let col = B[biome[c]];
-      col = mix(col, high, smooth(0.45, 0.95, h[c]) * 0.55);
-      col = mix(col, parchment, 0.09);
-      let pl = mix(parchment, high, smooth(0.3, 0.9, h[c]) * 0.6);
+      col = mix(col, high, smooth(0.4, 0.9, h[c]) * 0.6);
+      col = mix(col, parchment, 0.07);
+      let pl = mix(parchment, high, smooth(0.28, 0.85, h[c]) * 0.65);
       const s = shade[c];
-      if (s > 0) { col = mix(col, white, s * 0.4); pl = mix(pl, white, s * 0.36); }
-      else { col = mix(col, dark, -s * 0.55); pl = mix(pl, dark, -s * 0.48); }
+      if (s > 0) { col = mix(col, white, s * 0.42); pl = mix(pl, white, s * 0.38); }
+      else { col = mix(col, dark, -s * 0.58); pl = mix(pl, dark, -s * 0.5); }
       landC[c] = col; plainC[c] = pl;
     }
     const d = type[c] === 1 ? -h[c] : 0;
@@ -285,20 +285,20 @@ function render(ctx, m, V, O) {
   if (L.relief) {
     const I = P.icons; const lw = Math.max(0.45 * u, Math.min(spacing * 0.06, 1.1 * u));
     ctx.lineWidth = lw;
-    ctx.fillStyle = 'rgba(214,201,170,0.9)'; ctx.fill(I.hFill); ctx.strokeStyle = '#6b5a43'; ctx.stroke(I.hLine);
-    ctx.fillStyle = '#efe6d2'; ctx.fill(I.mLight); ctx.fillStyle = '#b3a283'; ctx.fill(I.mShade);
-    ctx.fillStyle = '#ffffff'; ctx.fill(I.snow); ctx.strokeStyle = '#4e3f2e'; ctx.stroke(I.mLine);
-    ctx.strokeStyle = '#4b5e3c'; ctx.stroke(I.tLine); ctx.fillStyle = '#7f9f62'; ctx.fill(I.tFill); ctx.stroke(I.tFill);
-    ctx.fillStyle = '#5c7a54'; ctx.fill(I.cFill); ctx.strokeStyle = '#33472f'; ctx.stroke(I.cFill); ctx.stroke(I.cLine);
-    ctx.strokeStyle = '#4f6b3c'; ctx.stroke(I.pLine);
-    ctx.strokeStyle = '#5c7a6a'; ctx.stroke(I.sLine);
-    ctx.strokeStyle = '#a88d5a'; ctx.stroke(I.dLine);
-    // man-made props: windmill (tan tower, dark sails) and lighthouse (red/white tower, warm beam)
-    ctx.fillStyle = 'rgba(255,223,120,0.3)'; ctx.fill(I.lBeam);
-    ctx.fillStyle = '#d8cdb0'; ctx.fill(I.lBody); ctx.fillStyle = '#9c2a22'; ctx.fill(I.lStripe);
-    ctx.strokeStyle = '#3a2a1c'; ctx.stroke(I.lLine);
-    ctx.fillStyle = '#c9a86a'; ctx.fill(I.wBody); ctx.fillStyle = '#3f3226'; ctx.fill(I.wBlade);
-    ctx.strokeStyle = '#3a2a1c'; ctx.stroke(I.wLine);
+    ctx.fillStyle = 'rgba(167,170,153,0.92)'; ctx.fill(I.hFill); ctx.strokeStyle = '#454a3c'; ctx.stroke(I.hLine);
+    ctx.fillStyle = '#d7dadc'; ctx.fill(I.mLight); ctx.fillStyle = '#6f7066'; ctx.fill(I.mShade);
+    ctx.fillStyle = '#f5f8f9'; ctx.fill(I.snow); ctx.strokeStyle = '#2b2e2a'; ctx.stroke(I.mLine);
+    ctx.strokeStyle = '#2f4430'; ctx.stroke(I.tLine); ctx.fillStyle = '#3f6246'; ctx.fill(I.tFill); ctx.stroke(I.tFill);
+    ctx.fillStyle = '#365038'; ctx.fill(I.cFill); ctx.strokeStyle = '#1f2f22'; ctx.stroke(I.cFill); ctx.stroke(I.cLine);
+    ctx.strokeStyle = '#395338'; ctx.stroke(I.pLine);
+    ctx.strokeStyle = '#4a6058'; ctx.stroke(I.sLine);
+    ctx.strokeStyle = '#8d8260'; ctx.stroke(I.dLine);
+    // man-made props: windmill (weathered timber) and lighthouse/beacon (stone & iron)
+    ctx.fillStyle = 'rgba(255,223,120,0.26)'; ctx.fill(I.lBeam);
+    ctx.fillStyle = '#b7bcbc'; ctx.fill(I.lBody); ctx.fillStyle = '#5c2a22'; ctx.fill(I.lStripe);
+    ctx.strokeStyle = '#20231f'; ctx.stroke(I.lLine);
+    ctx.fillStyle = '#7a6245'; ctx.fill(I.wBody); ctx.fillStyle = '#2a241c'; ctx.fill(I.wBlade);
+    ctx.strokeStyle = '#1c1912'; ctx.stroke(I.wLine);
   }
   // coast line
   ctx.strokeStyle = '#46565b'; ctx.lineWidth = 1.1 * u; ctx.stroke(P.coast);
@@ -343,14 +343,14 @@ function render(ctx, m, V, O) {
   const boxes = []; const hit = b => { for (const o of boxes) if (b.x < o.x + o.w && b.x + b.w > o.x && b.y < o.y + o.h && b.y + b.h > o.y) return true; return false; };
   const onScreen = (x, y, pad) => x > -pad && y > -pad && x < V.w + pad && y < V.h + pad;
   ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
-  const halo = (txt, x, y, col, hw) => { ctx.strokeStyle = 'rgba(244,236,214,0.9)'; ctx.lineWidth = hw || 3; ctx.strokeText(txt, x, y); ctx.fillStyle = col; ctx.fillText(txt, x, y); };
+  const halo = (txt, x, y, col, hw) => { ctx.strokeStyle = 'rgba(222,228,230,0.92)'; ctx.lineWidth = hw || 3; ctx.strokeText(txt, x, y); ctx.fillStyle = col; ctx.fillText(txt, x, y); };
   const hasLS = 'letterSpacing' in ctx; const LS = v => { if (hasLS) ctx.letterSpacing = v.toFixed(1) + 'px'; };
   const z = V.scale / V.fit;
   const tier = b => b.capital ? 0 : b.pop >= 10 ? 1 : b.pop >= 3 ? 2 : 3; // столица, город, городок, деревня
   const R_ = [7, 5, 3.2, 2.3];
   const FS = [15, 13.5, 12, 10.5];
-  const FONT = ['700 {s}px "Cormorant SC", Georgia, serif', '700 {s}px "Cormorant Garamond", Georgia, serif', '600 {s}px "Cormorant Garamond", Georgia, serif', 'italic 500 {s}px "Cormorant Garamond", Georgia, serif'];
-  const COL = ['#7a1414', '#22160c', '#33241a', '#4a3a2c'];
+  const FONT = ['700 {s}px "Cinzel", Georgia, serif', '700 {s}px "EB Garamond", Georgia, serif', '600 {s}px "EB Garamond", Georgia, serif', 'italic 500 {s}px "EB Garamond", Georgia, serif'];
+  const COL = ['#7a1f1f', '#1c2226', '#272e33', '#3a444c'];
   const font = (t, s) => FONT[t].replace('{s}', s.toFixed(1));
   const iconVis = t => t <= 2 || (t === 3 && z >= 0.75);
   const labelVis = t => t <= 1 || (t === 2 && z >= 1.25) || (t === 3 && z >= 2);
@@ -366,36 +366,33 @@ function render(ctx, m, V, O) {
       vis.push([b, x, y, r, t]); boxes.push(box);
     }
     for (const [b, x, y, r, t] of vis) {
-      if (t === 0) { // capital: castle silhouette — gatehouse + two flanking towers with crenellations
-        ctx.beginPath(); ctx.arc(x, y, r + 3, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,248,230,0.95)'; ctx.fill(); ctx.strokeStyle = '#2e2218'; ctx.lineWidth = 1.2; ctx.stroke();
-        ctx.fillStyle = '#7a1414'; ctx.strokeStyle = '#2e1010'; ctx.lineWidth = 0.9;
-        const tw = r * 0.62, th = r * 1.5, gw = r * 0.9, gh = r * 1.05, top = y + r * 0.75;
-        [-1, 1].forEach(sgn => {
-          const tx = x + sgn * (gw / 2 + tw / 2 - r * 0.05);
-          ctx.beginPath(); ctx.rect(tx - tw / 2, top - th, tw, th); ctx.fill(); ctx.stroke();
-          ctx.beginPath(); ctx.rect(tx - tw / 2, top - th - r * 0.22, tw * 0.32, r * 0.22); ctx.rect(tx + tw * 0.02, top - th - r * 0.22, tw * 0.32, r * 0.22); ctx.fill(); ctx.stroke();
-        });
-        ctx.beginPath(); ctx.rect(x - gw / 2, top - gh, gw, gh); ctx.fill(); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(x - gw / 2, top - gh); ctx.lineTo(x, top - gh - r * 0.55); ctx.lineTo(x + gw / 2, top - gh); ctx.closePath(); ctx.fill(); ctx.stroke();
-        ctx.fillStyle = '#2e1010'; ctx.beginPath(); ctx.moveTo(x, top - r * 0.1); ctx.lineTo(x - r * 0.2, top); ctx.lineTo(x + r * 0.2, top); ctx.closePath(); ctx.fill();
-      } else if (t === 1) { // city: walled square with corner towers and a dark gate
+      if (t === 0) { // capital: Nordic stone keep — blocky tower, steep dark roof, small banner
+        ctx.beginPath(); ctx.arc(x, y, r + 3, 0, Math.PI * 2); ctx.fillStyle = 'rgba(232,238,240,0.95)'; ctx.fill(); ctx.strokeStyle = '#20262a'; ctx.lineWidth = 1.2; ctx.stroke();
+        const tw = r * 1.3, th = r * 1.5, top = y + r * 0.78;
+        ctx.fillStyle = '#767e82'; ctx.strokeStyle = '#272b2c'; ctx.lineWidth = 0.9;
+        ctx.beginPath(); ctx.rect(x - tw / 2, top - th, tw, th); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#4a3528'; ctx.beginPath(); ctx.moveTo(x - tw / 2 - r * 0.18, top - th); ctx.lineTo(x, top - th - r * 1.0); ctx.lineTo(x + tw / 2 + r * 0.18, top - th); ctx.closePath(); ctx.fill(); ctx.stroke();
+        [-1, 1].forEach(sgn => { const tx = x + sgn * tw * 0.42, ty = top - th * 1.02; ctx.fillStyle = '#5c6468'; ctx.beginPath(); ctx.rect(tx - r * 0.1, ty - r * 0.34, r * 0.2, r * 0.34); ctx.fill(); ctx.stroke(); });
+        ctx.fillStyle = '#20262a'; ctx.fillRect(x - r * 0.1, top - r * 0.55, r * 0.2, r * 0.55);
+        ctx.fillStyle = '#7a1f1f'; ctx.beginPath(); ctx.moveTo(x, top - th - r * 1.0); ctx.lineTo(x + r * 0.55, top - th - r * 0.78); ctx.lineTo(x, top - th - r * 0.56); ctx.closePath(); ctx.fill();
+      } else if (t === 1) { // city: stone-walled settlement with corner watchtowers
         const half = r;
-        ctx.fillStyle = '#fff8e8'; ctx.strokeStyle = '#2a1d12'; ctx.lineWidth = 1.5;
+        ctx.fillStyle = '#cfd3d3'; ctx.strokeStyle = '#272b2c'; ctx.lineWidth = 1.5;
         ctx.fillRect(x - half, y - half, 2 * half, 2 * half); ctx.strokeRect(x - half, y - half, 2 * half, 2 * half);
-        ctx.fillStyle = '#5c4326';
-        for (const [cxo, cyo] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { ctx.beginPath(); ctx.arc(x + cxo * half, y + cyo * half, half * 0.32, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#2a1d12'; ctx.lineWidth = 0.8; ctx.stroke(); }
-        ctx.fillStyle = '#2a1d12'; ctx.fillRect(x - half * 0.32, y - half * 0.32, half * 0.64, half * 0.64);
-      } else if (t === 2) { // town: a little gabled house — roof + wall + door
+        ctx.fillStyle = '#4a5155';
+        for (const [cxo, cyo] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { ctx.beginPath(); ctx.arc(x + cxo * half, y + cyo * half, half * 0.32, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#272b2c'; ctx.lineWidth = 0.8; ctx.stroke(); }
+        ctx.fillStyle = '#272b2c'; ctx.fillRect(x - half * 0.32, y - half * 0.32, half * 0.64, half * 0.64);
+      } else if (t === 2) { // town: timber longhouse with a steep snow-capped roof
         const w = r * 1.9, hb = r * 1.0, roof = r * 1.1;
-        ctx.fillStyle = '#efe3c8'; ctx.strokeStyle = '#2a1d12'; ctx.lineWidth = 1;
+        ctx.fillStyle = '#5b4631'; ctx.strokeStyle = '#211a11'; ctx.lineWidth = 1;
         ctx.beginPath(); ctx.rect(x - w / 2, y - hb + roof * 0.1, w, hb); ctx.fill(); ctx.stroke();
-        ctx.fillStyle = '#8a3b2a'; ctx.beginPath(); ctx.moveTo(x - w / 2 - r * 0.15, y - hb + roof * 0.1); ctx.lineTo(x, y - hb - roof * 0.5); ctx.lineTo(x + w / 2 + r * 0.15, y - hb + roof * 0.1); ctx.closePath(); ctx.fill(); ctx.stroke();
-        ctx.fillStyle = '#4a3522'; ctx.fillRect(x - r * 0.16, y - hb * 0.55, r * 0.32, hb * 0.55);
-      } else { // village: a single small hut
+        ctx.fillStyle = '#dfe4e6'; ctx.beginPath(); ctx.moveTo(x - w / 2 - r * 0.15, y - hb + roof * 0.1); ctx.lineTo(x, y - hb - roof * 0.5); ctx.lineTo(x + w / 2 + r * 0.15, y - hb + roof * 0.1); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#2b2118'; ctx.fillRect(x - r * 0.16, y - hb * 0.55, r * 0.32, hb * 0.55);
+      } else { // village: a single snow-roofed hut
         const w = r * 1.5, hb = r * 0.75;
-        ctx.fillStyle = '#3a2a1c'; ctx.strokeStyle = 'rgba(255,248,232,0.95)'; ctx.lineWidth = 0.9;
+        ctx.fillStyle = '#2b241a'; ctx.strokeStyle = 'rgba(226,232,234,0.95)'; ctx.lineWidth = 0.9;
         ctx.beginPath(); ctx.rect(x - w / 2, y - hb * 0.35, w, hb); ctx.fill(); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(x - w / 2 - r * 0.1, y - hb * 0.35); ctx.lineTo(x, y - hb * 0.35 - r * 0.85); ctx.lineTo(x + w / 2 + r * 0.1, y - hb * 0.35); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#c9d0d2'; ctx.beginPath(); ctx.moveTo(x - w / 2 - r * 0.1, y - hb * 0.35); ctx.lineTo(x, y - hb * 0.35 - r * 0.85); ctx.lineTo(x + w / 2 + r * 0.1, y - hb * 0.35); ctx.closePath(); ctx.fill(); ctx.stroke();
       }
       if (b.port && z >= 2.2 && t > 0) { ctx.fillStyle = '#2f5f80'; ctx.fillRect(x + r - 0.5, y + r - 0.5, 2.6, 2.6); }
     }
@@ -422,20 +419,20 @@ function render(ctx, m, V, O) {
       const x = sx(s.lx), y = sy(s.ly); if (!onScreen(x, y, 300)) continue;
       let size = clamp(Math.sqrt(s.cells) * spacing * V.scale * 0.1, 10, 44);
       const room = s.lw * V.scale * 0.92; const nm = s.name.toUpperCase(), fm = s.form.toUpperCase();
-      ctx.font = `700 ${size.toFixed(1)}px "Cormorant SC", Georgia, serif`; LS(size * 0.12);
-      let tw = ctx.measureText(nm).width; if (tw > room) { size = Math.max(9, size * room / tw); ctx.font = `700 ${size.toFixed(1)}px "Cormorant SC", Georgia, serif`; LS(size * 0.12); tw = ctx.measureText(nm).width; }
+      ctx.font = `700 ${size.toFixed(1)}px "Cinzel", Georgia, serif`; LS(size * 0.12);
+      let tw = ctx.measureText(nm).width; if (tw > room) { size = Math.max(9, size * room / tw); ctx.font = `700 ${size.toFixed(1)}px "Cinzel", Georgia, serif`; LS(size * 0.12); tw = ctx.measureText(nm).width; }
       let placed = false;
       for (const dy of [0, -size * 1.3, size * 1.3, -size * 2.4, size * 2.4]) {
         for (const withForm of [true, false]) {
-          const fsz = size * 0.5; ctx.font = `600 ${fsz.toFixed(1)}px "Cormorant SC", Georgia, serif`; LS(fsz * 0.14);
+          const fsz = size * 0.5; ctx.font = `600 ${fsz.toFixed(1)}px "Cinzel", Georgia, serif`; LS(fsz * 0.14);
           const fw = withForm ? ctx.measureText(fm).width : 0;
           const top = y + dy - (withForm ? size * 0.62 + fsz * 0.55 : size * 0.5) + size * 0.12;
           const bw = Math.max(tw, fw); const box = { x: x - bw / 2 - 2, y: top, w: bw + 4, h: (y + dy + size * 0.12 + size * 0.5) - top };
           if (hit(box)) continue;
           boxes.push(box); ctx.globalAlpha = 0.86;
-          if (withForm) halo(fm, x, y + dy - size * 0.62, 'rgba(70,40,28,0.9)', 2.5);
-          ctx.font = `700 ${size.toFixed(1)}px "Cormorant SC", Georgia, serif`; LS(size * 0.12);
-          halo(nm, x, y + dy + size * 0.12, 'rgba(70,40,28,0.85)', 3);
+          if (withForm) halo(fm, x, y + dy - size * 0.62, 'rgba(26,32,37,0.9)', 2.5);
+          ctx.font = `700 ${size.toFixed(1)}px "Cinzel", Georgia, serif`; LS(size * 0.12);
+          halo(nm, x, y + dy + size * 0.12, 'rgba(26,32,37,0.88)', 3);
           ctx.globalAlpha = 1; placed = true; break;
         }
         if (placed) break;
@@ -444,7 +441,7 @@ function render(ctx, m, V, O) {
     }
     // sea names
     const ss = clamp(15 * zf, 13, 22);
-    ctx.font = `italic 600 ${ss.toFixed(1)}px "Cormorant Garamond", Georgia, serif`; LS(ss * 0.35);
+    ctx.font = `italic 600 ${ss.toFixed(1)}px "EB Garamond", Georgia, serif`; LS(ss * 0.35);
     for (const s of m.seas || []) {
       const x = sx(s.x), y = sy(s.y); if (!onScreen(x, y, 200)) continue;
       const tw = ctx.measureText(s.name).width; const box = { x: x - tw / 2, y: y - ss / 2, w: tw, h: ss }; if (hit(box)) continue; boxes.push(box);
@@ -457,7 +454,7 @@ function render(ctx, m, V, O) {
     const fs = clamp(11.5 * zf, 11, 16); ctx.textAlign = 'center';
     for (const { pp } of P.folk) {
       const x = sx(pp.lx), y = sy(pp.ly); if (!onScreen(x, y, 100)) continue;
-      ctx.font = `italic 700 ${fs.toFixed(1)}px "Cormorant Garamond", Georgia, serif`; LS(0.5);
+      ctx.font = `italic 700 ${fs.toFixed(1)}px "EB Garamond", Georgia, serif`; LS(0.5);
       const txt = pp.under ? pp.name + ' (Подземье)' : pp.name; const tw = ctx.measureText(txt).width;
       let ok = false;
       for (const dy of [0, -fs * 1.2, fs * 1.2, -fs * 2.4, fs * 2.4]) { const box = { x: x - tw / 2 - 2, y: y + dy - fs * 0.55, w: tw + 4, h: fs * 1.1 }; if (hit(box)) continue; boxes.push(box); halo(txt, x, y + dy, pp.color, 3); ok = true; break; }
@@ -468,7 +465,7 @@ function render(ctx, m, V, O) {
   if (L.burgs && L.labels) for (const v of vis) if (v[4] >= 2 && labelVis(v[4])) placeBurgLabel(v[0], v[1], v[2], v[3], v[4], false);
   // 6. rivers
   if (L.labels && L.rivers && z >= 1.35) {
-    const fs = 11.5 * zf; ctx.font = `italic 600 ${fs.toFixed(1)}px "Cormorant Garamond", Georgia, serif`; ctx.textAlign = 'center';
+    const fs = 11.5 * zf;    ctx.font = `italic 600 ${fs.toFixed(1)}px "EB Garamond", Georgia, serif`; ctx.textAlign = 'center';
     for (const r of m.rivers) {
       if (!r.name) continue; const p = r.pts; const i = Math.max(2, Math.floor(p.length / 4) * 2);
       const x = sx(p[i]), y = sy(p[i + 1]); if (!onScreen(x, y, 50)) continue;
@@ -513,67 +510,67 @@ function overlay(ctx, m, V, O) {
 // compass, scale bar, title, paper grain
 function decor(ctx, m, V, O) {
   ctx.save(); ctx.setTransform(V.dpr, 0, 0, V.dpr, 0, 0);
-  // paper grain + vignette
-  ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = 0.22; ctx.fillStyle = paper(ctx); ctx.fillRect(0, 0, V.w, V.h);
+  // weathered stone grain + cold mist vignette
+  ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = 0.2; ctx.fillStyle = paper(ctx); ctx.fillRect(0, 0, V.w, V.h);
   ctx.globalAlpha = 1;
   const g = ctx.createRadialGradient(V.w / 2, V.h / 2, Math.min(V.w, V.h) * 0.45, V.w / 2, V.h / 2, Math.max(V.w, V.h) * 0.75);
-  g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(120,90,60,0.28)'); ctx.fillStyle = g; ctx.fillRect(0, 0, V.w, V.h);
+  g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(10,16,22,0.42)'); ctx.fillStyle = g; ctx.fillRect(0, 0, V.w, V.h);
   ctx.globalCompositeOperation = 'source-over';
   // scale bar
   const kmPerPx = m.kmPerUnit / V.scale; const target = 150 * kmPerPx;
   const pow = Math.pow(10, Math.floor(Math.log10(target))); let step = pow;
   for (const f of [1, 2, 2.5, 5, 10]) if (f * pow <= target) step = f * pow;
   const len = step / kmPerPx; const x0 = O.scaleX || 20, y0 = V.h - 28;
-  ctx.fillStyle = 'rgba(244,236,214,0.85)'; ctx.fillRect(x0 - 10, y0 - 22, len + 20 + 90, 40);
-  ctx.strokeStyle = '#3d2f22'; ctx.lineWidth = 1; ctx.strokeRect(x0 - 10, y0 - 22, len + 20 + 90, 40);
-  for (let i = 0; i < 4; i++) { ctx.fillStyle = i % 2 ? '#f4ecd6' : '#3d2f22'; ctx.fillRect(x0 + len / 4 * i, y0, len / 4, 5); }
+  ctx.fillStyle = 'rgba(28,33,37,0.88)'; ctx.fillRect(x0 - 10, y0 - 22, len + 20 + 90, 40);
+  ctx.strokeStyle = '#6a7680'; ctx.lineWidth = 1; ctx.strokeRect(x0 - 10, y0 - 22, len + 20 + 90, 40);
+  for (let i = 0; i < 4; i++) { ctx.fillStyle = i % 2 ? '#dbe2e5' : '#20262a'; ctx.fillRect(x0 + len / 4 * i, y0, len / 4, 5); }
   ctx.strokeRect(x0, y0, len, 5);
-  ctx.fillStyle = '#2a1d12'; ctx.font = '600 13px "Cormorant Garamond", Georgia, serif'; ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
+  ctx.fillStyle = '#d8dee0'; ctx.font = '600 13px "EB Garamond", Georgia, serif'; ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
   const days = step / 30;
   ctx.fillText(`${step} км`, x0, y0 - 6);
   ctx.fillText(`≈ ${days < 1 ? days.toFixed(1) : Math.round(days * 10) / 10} дн. пешком`, x0 + len + 8, y0 + 5);
   // compass
   const cxp = V.w - 62, cyp = V.h - 70, R = 34;
   ctx.translate(cxp, cyp);
-  ctx.strokeStyle = '#3d2f22'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.arc(0, 0, R * 0.78, 0, Math.PI * 2); ctx.fillStyle = 'rgba(244,236,214,0.75)'; ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = '#6a7680'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(0, 0, R * 0.78, 0, Math.PI * 2); ctx.fillStyle = 'rgba(28,33,37,0.8)'; ctx.fill(); ctx.stroke();
   ctx.beginPath(); ctx.arc(0, 0, R * 0.7, 0, Math.PI * 2); ctx.stroke();
   for (let i = 0; i < 8; i++) {
     const a = i * Math.PI / 4 - Math.PI / 2; const long = i % 2 === 0; const r1 = long ? R : R * 0.55, r2 = R * 0.14;
     const ax = Math.cos(a) * r1, ay = Math.sin(a) * r1, bx = Math.cos(a + Math.PI / 2) * r2, by = Math.sin(a + Math.PI / 2) * r2;
-    ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.lineTo(0, 0); ctx.closePath(); ctx.fillStyle = '#3d2f22'; ctx.fill();
-    ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(-bx, -by); ctx.lineTo(0, 0); ctx.closePath(); ctx.fillStyle = '#f4ecd6'; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.lineTo(0, 0); ctx.closePath(); ctx.fillStyle = '#6a7680'; ctx.fill();
+    ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(-bx, -by); ctx.lineTo(0, 0); ctx.closePath(); ctx.fillStyle = '#dbe2e5'; ctx.fill(); ctx.stroke();
   }
-  ctx.font = '700 13px "Cormorant SC", Georgia, serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#2a1d12';
+  ctx.font = '700 13px "Cinzel", Georgia, serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#d8dee0';
   ctx.fillText('С', 0, -R - 9);
   ctx.setTransform(V.dpr, 0, 0, V.dpr, 0, 0);
   // legend
   if (O.layers && O.layers.legend) {
     const rows = [['cap', 'Столица'], ['city', 'Город'], ['town', 'Городок'], ['vil', 'Деревня'], ['road', 'Тракт / дорога'], ['border', 'Граница'], ['folk', 'Земли народа']];
     const lx = (O.scaleX || 20) - 10, lh = 17, bw = 132, bh = rows.length * lh + 30, ly = V.h - 58 - bh;
-    ctx.fillStyle = 'rgba(244,236,214,0.88)'; ctx.fillRect(lx, ly, bw, bh); ctx.strokeStyle = '#3d2f22'; ctx.lineWidth = 1; ctx.strokeRect(lx, ly, bw, bh);
-    ctx.font = '700 13px "Cormorant SC", Georgia, serif'; ctx.fillStyle = '#2a1d12'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText('Обозначения', lx + 10, ly + 13);
-    ctx.font = '600 13px "Cormorant Garamond", Georgia, serif';
+    ctx.fillStyle = 'rgba(28,33,37,0.9)'; ctx.fillRect(lx, ly, bw, bh); ctx.strokeStyle = '#6a7680'; ctx.lineWidth = 1; ctx.strokeRect(lx, ly, bw, bh);
+    ctx.font = '700 13px "Cinzel", Georgia, serif'; ctx.fillStyle = '#d8dee0'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText('Обозначения', lx + 10, ly + 13);
+    ctx.font = '600 13px "EB Garamond", Georgia, serif';
     rows.forEach(([k, t], i) => {
       const y = ly + 32 + i * lh, x = lx + 20;
       ctx.lineWidth = 1.2; ctx.setLineDash([]);
-      if (k === 'cap') { ctx.beginPath(); ctx.arc(x, y, 7, 0, Math.PI * 2); ctx.fillStyle = '#fff8e6'; ctx.fill(); ctx.strokeStyle = '#2e2218'; ctx.stroke(); ctx.beginPath(); for (let j = 0; j < 10; j++) { const a = -Math.PI / 2 + j * Math.PI / 5, rr = j % 2 ? 2.3 : 5.2; ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } ctx.closePath(); ctx.fillStyle = '#a31b1b'; ctx.fill(); }
-      else if (k === 'city') { ctx.fillStyle = '#fff8e8'; ctx.strokeStyle = '#2a1d12'; ctx.lineWidth = 1.6; ctx.fillRect(x - 5, y - 5, 10, 10); ctx.strokeRect(x - 5, y - 5, 10, 10); ctx.fillStyle = '#2a1d12'; ctx.fillRect(x - 2.2, y - 2.2, 4.5, 4.5); }
-      else if (k === 'town') { ctx.beginPath(); ctx.arc(x, y, 3.2, 0, Math.PI * 2); ctx.fillStyle = '#fff8e8'; ctx.fill(); ctx.strokeStyle = '#2a1d12'; ctx.stroke(); }
-      else if (k === 'vil') { ctx.beginPath(); ctx.arc(x, y, 1.9, 0, Math.PI * 2); ctx.fillStyle = '#3a2a1c'; ctx.fill(); }
-      else if (k === 'road') { ctx.strokeStyle = '#7b4a22'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(x - 9, y - 2); ctx.lineTo(x + 9, y - 2); ctx.stroke(); ctx.lineWidth = 1.1; ctx.setLineDash([4, 2]); ctx.beginPath(); ctx.moveTo(x - 9, y + 3); ctx.lineTo(x + 9, y + 3); ctx.stroke(); }
-      else if (k === 'border') { ctx.strokeStyle = 'rgba(105,30,75,0.9)'; ctx.lineWidth = 1.6; ctx.setLineDash([8, 3, 1.5, 3]); ctx.beginPath(); ctx.moveTo(x - 10, y); ctx.lineTo(x + 10, y); ctx.stroke(); }
-      else if (k === 'folk') { ctx.fillStyle = 'rgba(47,107,50,0.18)'; ctx.fillRect(x - 9, y - 5, 18, 10); ctx.strokeStyle = '#2f6b32'; ctx.lineWidth = 1.4; ctx.setLineDash([1.6, 2.6]); ctx.strokeRect(x - 9, y - 5, 18, 10); }
-      ctx.setLineDash([]); ctx.fillStyle = '#2a1d12'; ctx.fillText(t, lx + 38, y + 1);
+      if (k === 'cap') { ctx.fillStyle = '#767e82'; ctx.strokeStyle = '#20262a'; ctx.fillRect(x - 5, y - 1, 10, 7); ctx.strokeRect(x - 5, y - 1, 10, 7); ctx.fillStyle = '#4a3528'; ctx.beginPath(); ctx.moveTo(x - 6, y - 1); ctx.lineTo(x, y - 7); ctx.lineTo(x + 6, y - 1); ctx.closePath(); ctx.fill(); }
+      else if (k === 'city') { ctx.fillStyle = '#cfd3d3'; ctx.strokeStyle = '#272b2c'; ctx.lineWidth = 1.6; ctx.fillRect(x - 5, y - 5, 10, 10); ctx.strokeRect(x - 5, y - 5, 10, 10); ctx.fillStyle = '#272b2c'; ctx.fillRect(x - 2.2, y - 2.2, 4.5, 4.5); }
+      else if (k === 'town') { ctx.fillStyle = '#5b4631'; ctx.fillRect(x - 4, y - 1, 8, 5); ctx.fillStyle = '#dfe4e6'; ctx.beginPath(); ctx.moveTo(x - 5, y - 1); ctx.lineTo(x, y - 6); ctx.lineTo(x + 5, y - 1); ctx.closePath(); ctx.fill(); }
+      else if (k === 'vil') { ctx.fillStyle = '#2b241a'; ctx.fillRect(x - 3, y - 0.5, 6, 3.5); ctx.fillStyle = '#c9d0d2'; ctx.beginPath(); ctx.moveTo(x - 3.5, y - 0.5); ctx.lineTo(x, y - 4.5); ctx.lineTo(x + 3.5, y - 0.5); ctx.closePath(); ctx.fill(); }
+      else if (k === 'road') { ctx.strokeStyle = '#8a7250'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(x - 9, y - 2); ctx.lineTo(x + 9, y - 2); ctx.stroke(); ctx.lineWidth = 1.1; ctx.setLineDash([4, 2]); ctx.beginPath(); ctx.moveTo(x - 9, y + 3); ctx.lineTo(x + 9, y + 3); ctx.stroke(); }
+      else if (k === 'border') { ctx.strokeStyle = 'rgba(140,60,110,0.9)'; ctx.lineWidth = 1.6; ctx.setLineDash([8, 3, 1.5, 3]); ctx.beginPath(); ctx.moveTo(x - 10, y); ctx.lineTo(x + 10, y); ctx.stroke(); }
+      else if (k === 'folk') { ctx.fillStyle = 'rgba(70,110,90,0.22)'; ctx.fillRect(x - 9, y - 5, 18, 10); ctx.strokeStyle = '#4a7a5e'; ctx.lineWidth = 1.4; ctx.setLineDash([1.6, 2.6]); ctx.strokeRect(x - 9, y - 5, 18, 10); }
+      ctx.setLineDash([]); ctx.fillStyle = '#d8dee0'; ctx.fillText(t, lx + 38, y + 1);
     });
   }
-  // title cartouche
+  // title cartouche — hammered iron plaque
   if (O.title) {
-    const t = O.title; ctx.font = '700 30px "Cormorant SC", Georgia, serif'; if ('letterSpacing' in ctx) ctx.letterSpacing = '4px';
+    const t = O.title; ctx.font = '700 30px "Cinzel", Georgia, serif'; if ('letterSpacing' in ctx) ctx.letterSpacing = '4px';
     const tw = ctx.measureText(t).width; const bx = V.w / 2, by = 34;
-    ctx.fillStyle = 'rgba(244,236,214,0.9)'; ctx.strokeStyle = '#3d2f22'; ctx.lineWidth = 1.5;
+    ctx.fillStyle = 'rgba(24,28,31,0.92)'; ctx.strokeStyle = '#6a7680'; ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.moveTo(bx - tw / 2 - 34, by - 22); ctx.lineTo(bx + tw / 2 + 34, by - 22); ctx.lineTo(bx + tw / 2 + 22, by); ctx.lineTo(bx + tw / 2 + 34, by + 22); ctx.lineTo(bx - tw / 2 - 34, by + 22); ctx.lineTo(bx - tw / 2 - 22, by); ctx.closePath(); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#2a1d12'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(t, bx, by + 1);
+    ctx.fillStyle = '#e4e9ea'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(t, bx, by + 1);
     if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
   }
   ctx.restore();

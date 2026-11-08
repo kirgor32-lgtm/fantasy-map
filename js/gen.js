@@ -72,20 +72,20 @@ class Heap {
 // ---------------- reference data ----------------
 // id, name, color, habitability, movement cost
 const BIOMES = [
-  { name: 'Море', color: '#6fa8c2', hab: 0, cost: 30 },
-  { name: 'Пустыня', color: '#e8c468', hab: 4, cost: 3 },
-  { name: 'Холодная пустошь', color: '#b9b483', hab: 8, cost: 3 },
-  { name: 'Саванна', color: '#d2c660', hab: 50, cost: 1.3 },
-  { name: 'Луга и степи', color: '#a9cc69', hab: 100, cost: 1 },
-  { name: 'Сезонный лес', color: '#86b854', hab: 80, cost: 1.6 },
-  { name: 'Лиственный лес', color: '#63a152', hab: 90, cost: 1.7 },
-  { name: 'Джунгли', color: '#469447', hab: 35, cost: 3 },
-  { name: 'Влажный лес', color: '#45874b', hab: 60, cost: 2 },
-  { name: 'Тайга', color: '#538763', hab: 25, cost: 2 },
-  { name: 'Тундра', color: '#a0a883', hab: 8, cost: 2.5 },
-  { name: 'Ледник', color: '#eef7fb', hab: 0, cost: 6 },
-  { name: 'Болото', color: '#6f9664', hab: 15, cost: 4 },
-  { name: 'Высокогорье', color: '#ad9c80', hab: 3, cost: 6 }
+  { name: 'Море', color: '#4c7691', hab: 0, cost: 30 },
+  { name: 'Пустыня', color: '#c7b584', hab: 4, cost: 3 },
+  { name: 'Холодная пустошь', color: '#919c86', hab: 8, cost: 3 },
+  { name: 'Саванна', color: '#aba35f', hab: 50, cost: 1.3 },
+  { name: 'Луга и степи', color: '#7f9a5c', hab: 100, cost: 1 },
+  { name: 'Сезонный лес', color: '#587a49', hab: 80, cost: 1.6 },
+  { name: 'Лиственный лес', color: '#3f6640', hab: 90, cost: 1.7 },
+  { name: 'Джунгли', color: '#397a42', hab: 35, cost: 3 },
+  { name: 'Влажный лес', color: '#355f3d', hab: 60, cost: 2 },
+  { name: 'Тайга', color: '#48705a', hab: 25, cost: 2 },
+  { name: 'Тундра', color: '#8b9683', hab: 8, cost: 2.5 },
+  { name: 'Ледник', color: '#e4eef2', hab: 0, cost: 6 },
+  { name: 'Болото', color: '#566d4e', hab: 15, cost: 4 },
+  { name: 'Высокогорье', color: '#857c6e', hab: 3, cost: 6 }
 ];
 
 const LANGS = {
@@ -410,7 +410,7 @@ function generate(P) {
   let maxDist = 1; for (let c = 0; c < n; c++) maxDist = Math.max(maxDist, distSea[c]);
   // latitude is measured across the continent itself, so the north tip is always polar
   // and the south tip always hot (glaciers + deserts on every map)
-  const CL = { temperate: [-8, 37], cold: [-16, 24], hot: [6, 44] }[climate] || [-8, 37];
+  const CL = { temperate: [-8, 37], cold: [-16, 24], hot: [6, 44], skyrim: [-24, 12] }[climate] || [-8, 37];
   let minY = H, maxY = 0;
   for (let c = 0; c < n; c++) if (type[c] !== 1) { if (cy[c] < minY) minY = cy[c]; if (cy[c] > maxY) maxY = cy[c]; }
   const latSpan = Math.max(1, maxY - minY);
@@ -931,13 +931,13 @@ function generate(P) {
       if (blocked[c] || h[c] < 0.3) continue;
       if (flux[c] > riverThr * 2) continue;
       const jx = cx[c] + (rand() - 0.5) * spacing * 0.5, jy = cy[c] + (rand() - 0.5) * spacing * 0.5;
-      if (h[c] >= 0.5) {
-        const s = spacing * (0.8 + (h[c] - 0.5) * 2.0) * (0.85 + rand() * 0.3);
-        const type2 = h[c] > 0.75 && temp[c] < 6 ? 'M' : 'm';
+      if (h[c] >= 0.42) {
+        const s = spacing * (0.8 + (h[c] - 0.42) * 1.8) * (0.85 + rand() * 0.3);
+        const type2 = h[c] > 0.62 && temp[c] < 11 ? 'M' : 'm';
         if (free(jx, jy, s * 2.1)) {
           put({ t: type2, x: jx, y: jy, s, r: s * 2.1 });
           // tall massifs get a second, smaller peak beside the main one -> reads as a ridge, not a single cone
-          if (h[c] > 0.62 && rand() < 0.55) {
+          if (h[c] > 0.5 && rand() < 0.65) {
             const a = rand() * Math.PI * 2, s2 = s * (0.55 + rand() * 0.2);
             const jx2 = jx + Math.cos(a) * s * 0.85, jy2 = jy + Math.sin(a) * s * 0.4 - s2 * 0.15;
             put({ t: type2, x: jx2, y: jy2, s: s2, r: s2 * 1.4, behind: true });
