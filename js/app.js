@@ -430,7 +430,6 @@ $('#btnLink').onclick = async () => { try { await navigator.clipboard.writeText(
 // ---------- controls ----------
 $('#btnNew').onclick = () => { $('#inSeed').value = randSeed(); makeMap(readParams()); };
 $('#btnRegen').onclick = () => makeMap(readParams());
-$('#btnSeed').onclick = () => { $('#inSeed').value = randSeed(); markDirty(); };
 document.querySelectorAll('#detParams input, #detParams select').forEach(el => { el.addEventListener('input', markDirty); el.addEventListener('change', markDirty); });
 ['#inLand', '#inRough', '#inStates', '#inTowns'].forEach(s => $(s).addEventListener('input', syncLabels));
 $('#inName').addEventListener('change', e => { const v = e.target.value.trim(); if (!v || !S.map) return; S.map.name = v; S.edits.name = v; persist(); requestDraw(); });
