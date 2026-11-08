@@ -72,20 +72,20 @@ class Heap {
 // ---------------- reference data ----------------
 // id, name, color, habitability, movement cost
 const BIOMES = [
-  { name: 'Море', color: '#9fc0cf', hab: 0, cost: 30 },
-  { name: 'Пустыня', color: '#ecd08a', hab: 4, cost: 3 },
-  { name: 'Холодная пустошь', color: '#c7c39c', hab: 8, cost: 3 },
-  { name: 'Саванна', color: '#d6cf8c', hab: 50, cost: 1.3 },
-  { name: 'Луга и степи', color: '#c4d096', hab: 100, cost: 1 },
-  { name: 'Сезонный лес', color: '#a8c27a', hab: 80, cost: 1.6 },
-  { name: 'Лиственный лес', color: '#8daf72', hab: 90, cost: 1.7 },
-  { name: 'Джунгли', color: '#78a463', hab: 35, cost: 3 },
-  { name: 'Влажный лес', color: '#6f9a69', hab: 60, cost: 2 },
-  { name: 'Тайга', color: '#7a9576', hab: 25, cost: 2 },
-  { name: 'Тундра', color: '#b8b59e', hab: 8, cost: 2.5 },
-  { name: 'Ледник', color: '#f4f8fb', hab: 0, cost: 6 },
-  { name: 'Болото', color: '#8fa889', hab: 15, cost: 4 },
-  { name: 'Высокогорье', color: '#c2b49e', hab: 3, cost: 6 }
+  { name: 'Море', color: '#6fa8c2', hab: 0, cost: 30 },
+  { name: 'Пустыня', color: '#e8c468', hab: 4, cost: 3 },
+  { name: 'Холодная пустошь', color: '#b9b483', hab: 8, cost: 3 },
+  { name: 'Саванна', color: '#d2c660', hab: 50, cost: 1.3 },
+  { name: 'Луга и степи', color: '#a9cc69', hab: 100, cost: 1 },
+  { name: 'Сезонный лес', color: '#86b854', hab: 80, cost: 1.6 },
+  { name: 'Лиственный лес', color: '#63a152', hab: 90, cost: 1.7 },
+  { name: 'Джунгли', color: '#469447', hab: 35, cost: 3 },
+  { name: 'Влажный лес', color: '#45874b', hab: 60, cost: 2 },
+  { name: 'Тайга', color: '#538763', hab: 25, cost: 2 },
+  { name: 'Тундра', color: '#a0a883', hab: 8, cost: 2.5 },
+  { name: 'Ледник', color: '#eef7fb', hab: 0, cost: 6 },
+  { name: 'Болото', color: '#6f9664', hab: 15, cost: 4 },
+  { name: 'Высокогорье', color: '#ad9c80', hab: 3, cost: 6 }
 ];
 
 const LANGS = {
@@ -931,7 +931,19 @@ function generate(P) {
       if (blocked[c] || h[c] < 0.3) continue;
       if (flux[c] > riverThr * 2) continue;
       const jx = cx[c] + (rand() - 0.5) * spacing * 0.5, jy = cy[c] + (rand() - 0.5) * spacing * 0.5;
-      if (h[c] >= 0.5) { const s = spacing * (0.8 + (h[c] - 0.5) * 2.0) * (0.85 + rand() * 0.3); if (free(jx, jy, s * 2.1)) put({ t: h[c] > 0.75 && temp[c] < 6 ? 'M' : 'm', x: jx, y: jy, s, r: s * 2.1 }); }
+      if (h[c] >= 0.5) {
+        const s = spacing * (0.8 + (h[c] - 0.5) * 2.0) * (0.85 + rand() * 0.3);
+        const type2 = h[c] > 0.75 && temp[c] < 6 ? 'M' : 'm';
+        if (free(jx, jy, s * 2.1)) {
+          put({ t: type2, x: jx, y: jy, s, r: s * 2.1 });
+          // tall massifs get a second, smaller peak beside the main one -> reads as a ridge, not a single cone
+          if (h[c] > 0.62 && rand() < 0.55) {
+            const a = rand() * Math.PI * 2, s2 = s * (0.55 + rand() * 0.2);
+            const jx2 = jx + Math.cos(a) * s * 0.85, jy2 = jy + Math.sin(a) * s * 0.4 - s2 * 0.15;
+            put({ t: type2, x: jx2, y: jy2, s: s2, r: s2 * 1.4, behind: true });
+          }
+        }
+      }
       else if (rand() < 0.55) { const s = spacing * 0.6; if (free(jx, jy, s * 2.2)) put({ t: 'h', x: jx, y: jy, s, r: s * 2.2 }); }
     }
     const treeT = { 5: 't', 6: 't', 8: 't', 9: 'c', 7: 'p', 12: 's', 1: 'd' };
@@ -941,6 +953,24 @@ function generate(P) {
       const jx = cx[c] + (rand() - 0.5) * spacing * 0.7, jy = cy[c] + (rand() - 0.5) * spacing * 0.7;
       const s = spacing * (0.32 + rand() * 0.1);
       if (free(jx, jy, s * 2.4)) put({ t: tt, x: jx, y: jy, s, r: s * 2.4 });
+    }
+    // man-made props: windmills on farmland near real (non-filler) towns, lighthouses on capes near ports
+    const farmBiome = { 3: 1, 4: 1, 5: 1, 6: 0.5 };
+    for (const b of burgs) {
+      if (b.filler || b.pop < 1.5) continue;
+      const chanceW = farmBiome[biome[b.cell]]; if (!chanceW) continue;
+      for (let k = nOff[b.cell]; k < nOff[b.cell + 1]; k++) {
+        const q = nbr[k]; if (q < 0 || type[q] !== 0 || biome[q] === 11) continue;
+        if (rand() < 0.4 * chanceW) { const s = spacing * 0.42; if (free(cx[q], cy[q], s * 2.2)) put({ t: 'w', x: cx[q], y: cy[q], s, r: s * 2.2 }); break; }
+      }
+    }
+    for (const b of burgs) {
+      if (!coastal(b.cell) || (!b.capital && b.pop < 6) || rand() > 0.65) continue;
+      for (let k = nOff[b.cell]; k < nOff[b.cell + 1]; k++) {
+        const q = nbr[k]; if (q < 0 || type[q] !== 1) continue;
+        const s = spacing * 0.5; if (free(cx[b.cell] * 0.35 + cx[q] * 0.65, cy[b.cell] * 0.35 + cy[q] * 0.65, s * 2.4)) put({ t: 'L', x: cx[b.cell] * 0.35 + cx[q] * 0.65, y: cy[b.cell] * 0.35 + cy[q] * 0.65, s, r: s * 2.4 });
+        break;
+      }
     }
     icons.sort((a, b) => a.y - b.y);
   }

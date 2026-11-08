@@ -1,7 +1,7 @@
 /* Canvas renderer: pre-builds layers (bitmaps + Path2D) once per map, then every frame is ~40 draw calls. */
 (function () {
 'use strict';
-const SEA_BG = '#8fb0c1';
+const SEA_BG = '#5f93ab';
 const hexRgb = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
 const mix = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
 const css = c => `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`;
@@ -47,20 +47,20 @@ function prepare(m) {
   const B = FMG.BIOMES.map(b => hexRgb(b.color));
   const parchment = hexRgb('#eadfc3'), dark = hexRgb('#3b2f22'), white = [255, 252, 244], high = hexRgb('#d8ccb4');
   const landC = new Array(n), plainC = new Array(n), seaC = new Array(n);
-  const shallow = hexRgb('#b9d4dc'), deep = hexRgb('#6a93aa');
+  const shallow = hexRgb('#9bc8d6'), deep = hexRgb('#2f6a88');
   for (let c = 0; c < n; c++) {
     if (type[c] === 0) {
       let col = B[biome[c]];
       col = mix(col, high, smooth(0.45, 0.95, h[c]) * 0.55);
-      col = mix(col, parchment, 0.16);
+      col = mix(col, parchment, 0.09);
       let pl = mix(parchment, high, smooth(0.3, 0.9, h[c]) * 0.6);
       const s = shade[c];
-      if (s > 0) { col = mix(col, white, s * 0.32); pl = mix(pl, white, s * 0.3); }
-      else { col = mix(col, dark, -s * 0.42); pl = mix(pl, dark, -s * 0.38); }
+      if (s > 0) { col = mix(col, white, s * 0.4); pl = mix(pl, white, s * 0.36); }
+      else { col = mix(col, dark, -s * 0.55); pl = mix(pl, dark, -s * 0.48); }
       landC[c] = col; plainC[c] = pl;
     }
     const d = type[c] === 1 ? -h[c] : 0;
-    seaC[c] = css(mix(shallow, deep, Math.pow(d, 0.75)));
+    seaC[c] = css(mix(shallow, deep, Math.pow(d, 0.7)));
   }
   // dilate land colour into neighbouring water cells so clipping by the smooth coast never shows gaps
   const dil = (arr) => {
@@ -127,7 +127,8 @@ function prepare(m) {
   P.rivers = [...buckets.entries()].sort((a, b) => a[0] - b[0]).map(([b, path]) => ({ w: b * bw, path }));
   // relief icons
   const I = { mLight: new Path2D(), mShade: new Path2D(), mLine: new Path2D(), snow: new Path2D(), hFill: new Path2D(), hLine: new Path2D(),
-    tFill: new Path2D(), tLine: new Path2D(), cFill: new Path2D(), cLine: new Path2D(), pLine: new Path2D(), pFill: new Path2D(), sLine: new Path2D(), dLine: new Path2D() };
+    tFill: new Path2D(), tLine: new Path2D(), cFill: new Path2D(), cLine: new Path2D(), pLine: new Path2D(), pFill: new Path2D(), sLine: new Path2D(), dLine: new Path2D(),
+    wBody: new Path2D(), wBlade: new Path2D(), wLine: new Path2D(), lBody: new Path2D(), lStripe: new Path2D(), lLine: new Path2D(), lBeam: new Path2D() };
   for (const ic of m.icons) {
     const { x, y, s } = ic;
     switch (ic.t) {
@@ -164,6 +165,27 @@ function prepare(m) {
         I.dLine.moveTo(x - s, y); I.dLine.quadraticCurveTo(x - s * 0.2, y - s * 0.7, x + s * 0.4, y - s * 0.1);
         I.dLine.moveTo(x - s * 0.1, y + s * 0.35); I.dLine.quadraticCurveTo(x + s * 0.5, y - s * 0.2, x + s * 1.1, y + s * 0.3);
         break;
+      case 'w': { // windmill: squat tower + 4 angled blades on a pivot
+        const hub = y - s * 1.1;
+        I.wBody.moveTo(x - s * 0.42, y); I.wBody.lineTo(x - s * 0.26, y - s * 1.3); I.wBody.lineTo(x + s * 0.26, y - s * 1.3); I.wBody.lineTo(x + s * 0.42, y); I.wBody.closePath();
+        I.wLine.moveTo(x - s * 0.42, y); I.wLine.lineTo(x - s * 0.26, y - s * 1.3); I.wLine.lineTo(x + s * 0.26, y - s * 1.3); I.wLine.lineTo(x + s * 0.42, y); I.wLine.closePath();
+        for (const a0 of [0.5, 2.2, 3.7, 5.3]) {
+          const a = a0, bx = x + Math.cos(a) * s * 0.85, by = hub + Math.sin(a) * s * 0.85;
+          I.wBlade.moveTo(x, hub); I.wBlade.lineTo(bx + Math.cos(a + 1.7) * s * 0.22, by + Math.sin(a + 1.7) * s * 0.22); I.wBlade.lineTo(bx, by); I.wBlade.closePath();
+        }
+        I.wLine.moveTo(x + s * 0.1, hub); I.wLine.arc(x, hub, s * 0.1, 0, Math.PI * 2);
+        break;
+      }
+      case 'L': { // lighthouse: striped tower with a lantern and a short light beam
+        const top = y - s * 2.0;
+        I.lBody.moveTo(x - s * 0.3, y); I.lBody.lineTo(x - s * 0.16, top); I.lBody.lineTo(x + s * 0.16, top); I.lBody.lineTo(x + s * 0.3, y); I.lBody.closePath();
+        I.lLine.moveTo(x - s * 0.3, y); I.lLine.lineTo(x - s * 0.16, top); I.lLine.lineTo(x + s * 0.16, top); I.lLine.lineTo(x + s * 0.3, y); I.lLine.closePath();
+        const sw = (y - top) / 3;
+        I.lStripe.moveTo(x - s * 0.27, y - sw); I.lStripe.lineTo(x - s * 0.2, top + sw); I.lStripe.lineTo(x + s * 0.2, top + sw); I.lStripe.lineTo(x + s * 0.27, y - sw); I.lStripe.closePath();
+        I.lBody.rect(x - s * 0.22, top - s * 0.22, s * 0.44, s * 0.22);
+        I.lBeam.moveTo(x, top - s * 0.1); I.lBeam.lineTo(x + s * 1.8, top - s * 0.55); I.lBeam.lineTo(x + s * 1.8, top + s * 0.35); I.lBeam.closePath();
+        break;
+      }
     }
   }
   P.icons = I;
@@ -271,6 +293,12 @@ function render(ctx, m, V, O) {
     ctx.strokeStyle = '#4f6b3c'; ctx.stroke(I.pLine);
     ctx.strokeStyle = '#5c7a6a'; ctx.stroke(I.sLine);
     ctx.strokeStyle = '#a88d5a'; ctx.stroke(I.dLine);
+    // man-made props: windmill (tan tower, dark sails) and lighthouse (red/white tower, warm beam)
+    ctx.fillStyle = 'rgba(255,223,120,0.3)'; ctx.fill(I.lBeam);
+    ctx.fillStyle = '#d8cdb0'; ctx.fill(I.lBody); ctx.fillStyle = '#9c2a22'; ctx.fill(I.lStripe);
+    ctx.strokeStyle = '#3a2a1c'; ctx.stroke(I.lLine);
+    ctx.fillStyle = '#c9a86a'; ctx.fill(I.wBody); ctx.fillStyle = '#3f3226'; ctx.fill(I.wBlade);
+    ctx.strokeStyle = '#3a2a1c'; ctx.stroke(I.wLine);
   }
   // coast line
   ctx.strokeStyle = '#46565b'; ctx.lineWidth = 1.1 * u; ctx.stroke(P.coast);
@@ -338,17 +366,36 @@ function render(ctx, m, V, O) {
       vis.push([b, x, y, r, t]); boxes.push(box);
     }
     for (const [b, x, y, r, t] of vis) {
-      if (t === 0) {
-        ctx.beginPath(); ctx.arc(x, y, r + 2.2, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,248,230,0.95)'; ctx.fill(); ctx.strokeStyle = '#2e2218'; ctx.lineWidth = 1.2; ctx.stroke();
-        star(x, y, r); ctx.fillStyle = '#a31b1b'; ctx.fill(); ctx.strokeStyle = '#4a0e0e'; ctx.lineWidth = 0.8; ctx.stroke();
-      } else if (t === 1) { // city: square fortress with dark core
-        ctx.fillStyle = '#fff8e8'; ctx.strokeStyle = '#2a1d12'; ctx.lineWidth = 1.6;
-        ctx.fillRect(x - r, y - r, 2 * r, 2 * r); ctx.strokeRect(x - r, y - r, 2 * r, 2 * r);
-        ctx.fillStyle = '#2a1d12'; ctx.fillRect(x - r * 0.45, y - r * 0.45, r * 0.9, r * 0.9);
-      } else if (t === 2) {
-        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fillStyle = '#fff8e8'; ctx.fill(); ctx.strokeStyle = '#2a1d12'; ctx.lineWidth = 1.2; ctx.stroke();
-      } else {
-        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fillStyle = '#3a2a1c'; ctx.fill(); ctx.strokeStyle = 'rgba(255,248,232,0.95)'; ctx.lineWidth = 1.1; ctx.stroke();
+      if (t === 0) { // capital: castle silhouette — gatehouse + two flanking towers with crenellations
+        ctx.beginPath(); ctx.arc(x, y, r + 3, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,248,230,0.95)'; ctx.fill(); ctx.strokeStyle = '#2e2218'; ctx.lineWidth = 1.2; ctx.stroke();
+        ctx.fillStyle = '#7a1414'; ctx.strokeStyle = '#2e1010'; ctx.lineWidth = 0.9;
+        const tw = r * 0.62, th = r * 1.5, gw = r * 0.9, gh = r * 1.05, top = y + r * 0.75;
+        [-1, 1].forEach(sgn => {
+          const tx = x + sgn * (gw / 2 + tw / 2 - r * 0.05);
+          ctx.beginPath(); ctx.rect(tx - tw / 2, top - th, tw, th); ctx.fill(); ctx.stroke();
+          ctx.beginPath(); ctx.rect(tx - tw / 2, top - th - r * 0.22, tw * 0.32, r * 0.22); ctx.rect(tx + tw * 0.02, top - th - r * 0.22, tw * 0.32, r * 0.22); ctx.fill(); ctx.stroke();
+        });
+        ctx.beginPath(); ctx.rect(x - gw / 2, top - gh, gw, gh); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x - gw / 2, top - gh); ctx.lineTo(x, top - gh - r * 0.55); ctx.lineTo(x + gw / 2, top - gh); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#2e1010'; ctx.beginPath(); ctx.moveTo(x, top - r * 0.1); ctx.lineTo(x - r * 0.2, top); ctx.lineTo(x + r * 0.2, top); ctx.closePath(); ctx.fill();
+      } else if (t === 1) { // city: walled square with corner towers and a dark gate
+        const half = r;
+        ctx.fillStyle = '#fff8e8'; ctx.strokeStyle = '#2a1d12'; ctx.lineWidth = 1.5;
+        ctx.fillRect(x - half, y - half, 2 * half, 2 * half); ctx.strokeRect(x - half, y - half, 2 * half, 2 * half);
+        ctx.fillStyle = '#5c4326';
+        for (const [cxo, cyo] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { ctx.beginPath(); ctx.arc(x + cxo * half, y + cyo * half, half * 0.32, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#2a1d12'; ctx.lineWidth = 0.8; ctx.stroke(); }
+        ctx.fillStyle = '#2a1d12'; ctx.fillRect(x - half * 0.32, y - half * 0.32, half * 0.64, half * 0.64);
+      } else if (t === 2) { // town: a little gabled house — roof + wall + door
+        const w = r * 1.9, hb = r * 1.0, roof = r * 1.1;
+        ctx.fillStyle = '#efe3c8'; ctx.strokeStyle = '#2a1d12'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.rect(x - w / 2, y - hb + roof * 0.1, w, hb); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#8a3b2a'; ctx.beginPath(); ctx.moveTo(x - w / 2 - r * 0.15, y - hb + roof * 0.1); ctx.lineTo(x, y - hb - roof * 0.5); ctx.lineTo(x + w / 2 + r * 0.15, y - hb + roof * 0.1); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#4a3522'; ctx.fillRect(x - r * 0.16, y - hb * 0.55, r * 0.32, hb * 0.55);
+      } else { // village: a single small hut
+        const w = r * 1.5, hb = r * 0.75;
+        ctx.fillStyle = '#3a2a1c'; ctx.strokeStyle = 'rgba(255,248,232,0.95)'; ctx.lineWidth = 0.9;
+        ctx.beginPath(); ctx.rect(x - w / 2, y - hb * 0.35, w, hb); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x - w / 2 - r * 0.1, y - hb * 0.35); ctx.lineTo(x, y - hb * 0.35 - r * 0.85); ctx.lineTo(x + w / 2 + r * 0.1, y - hb * 0.35); ctx.closePath(); ctx.fill(); ctx.stroke();
       }
       if (b.port && z >= 2.2 && t > 0) { ctx.fillStyle = '#2f5f80'; ctx.fillRect(x + r - 0.5, y + r - 0.5, 2.6, 2.6); }
     }
